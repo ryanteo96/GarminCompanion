@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { authed, mintCookie, same } from '../lib/auth.js';
-import { addDays, normalize, ranges, token } from '../lib/garmin.js';
+import { addDays, normalize, parseToken, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
 import { corr, insights, loadSeries, readiness, weekStart, withLoad } from '../public/stats.js';
 
@@ -29,11 +29,17 @@ test('token exchange sends the ApiKey header and parses the access token', async
   process.env.GARMIN_API_KEY = 'k123';
   const real = globalThis.fetch;
   let seen;
-  globalThis.fetch = async (url, init) => ((seen = { url, init }), new Response(JSON.stringify({ access_token: 'abc' }), { status: 200 }));
-  assert.equal(await token(), 'abc');
+  globalThis.fetch = async (url, init) => ((seen = { url, init }), new Response('eyJhbGciOiJSUzI1NiJ9.payload.sig\n', { status: 200 }));
+  assert.equal(await token(), 'eyJhbGciOiJSUzI1NiJ9.payload.sig');
   assert.equal(seen.init.headers.Authorization, 'ApiKey k123');
   assert.match(seen.url, /personal-api-key\/token$/);
   globalThis.fetch = real;
+});
+
+test('parseToken accepts plain text, JSON object and JSON string', () => {
+  assert.equal(parseToken(' eyJabc.def.ghi \n'), 'eyJabc.def.ghi');
+  assert.equal(parseToken('{"access_token":"abc"}'), 'abc');
+  assert.equal(parseToken('"abc"'), 'abc');
 });
 
 test('cookie round-trip and tamper detection', () => {
