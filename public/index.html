@@ -14,6 +14,21 @@
 <body>
   <a class="skip" href="#main">Skip to content</a>
 
+  <section id="boot" class="boot" aria-busy="true">
+    <p class="muted" role="status">Loading your data…</p>
+    <div class="skel-row"><i class="card skel"></i><i class="card skel"></i><i class="card skel"></i><i class="card skel"></i></div>
+    <i class="card skel tall"></i>
+  </section>
+
+  <section id="error" class="login" hidden>
+    <div class="card login-card" role="alert">
+      <h1 id="err-title"></h1>
+      <p id="err-hint"></p>
+      <p id="err-detail" class="muted small"></p>
+      <button id="err-retry" class="btn primary" type="button">Try again</button>
+    </div>
+  </section>
+
   <section id="login" class="login" hidden>
     <form id="login-form" class="card login-card">
       <h1>Garmin Companion</h1>
@@ -48,7 +63,7 @@
     </div>
 
     <main id="main">
-      <p id="status" class="muted" role="status">Loading…</p>
+      <p id="notice" class="notice" role="status" hidden><span id="notice-text"></span> <button id="notice-retry" class="btn small" type="button" hidden>Retry</button></p>
 
       <section id="p-recovery" role="tabpanel" aria-labelledby="t-recovery" hidden>
         <section id="today" class="card today" aria-labelledby="today-h" hidden>

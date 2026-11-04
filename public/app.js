@@ -1,3 +1,4 @@
+import { friendly } from './errors.js';
 import { explain, insights, loadSeries, mean, ratioLabel, readiness, weekDeltas, weekly, withLoad } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
@@ -45,6 +46,15 @@ function describe(name, values, unit = '') {
 function draw(id, type, labels, datasets, { stacked = false, summary, horizontal = false, whole = false } = {}) {
   charts[id]?.destroy();
   const el = $(id);
+  const host = el.parentElement;
+  host.querySelector('.empty')?.remove();
+  const empty = datasets.every((d) => d.data.every((v) => v == null));
+  el.hidden = empty;
+  if (empty) {
+    el.setAttribute('aria-label', 'No data for this period.');
+    host.append(Object.assign(text(document.createElement('p'), 'No data for this period.'), { className: 'empty muted' }));
+    return;
+  }
   el.setAttribute('aria-label', summary ?? '');
   const mfg = css('--mfg');
   const axis = { ticks: { color: mfg, maxTicksLimit: 8, maxRotation: 0 }, stacked };
@@ -224,7 +234,7 @@ function render() {
   try {
     PANELS[tab]();
   } catch (e) {
-    text($('status'), `Couldn't draw this view: ${e.message}`).hidden = false;
+    notify(`Couldn't draw this view: ${e.message}`);
   }
 }
 
@@ -251,37 +261,97 @@ document.querySelector('.tabs').addEventListener('keydown', (e) => {
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
 
 // ---------- data + login ----------
-function show(loggedIn) {
-  $('login').hidden = loggedIn;
-  $('app').hidden = !loggedIn;
-  if (!loggedIn) $('pw').focus();
+const VIEWS = ['boot', 'login', 'error', 'app'];
+function show(view) {
+  for (const v of VIEWS) $(v).hidden = v !== view;
+  if (view === 'login') $('pw').focus();
+  if (view === 'error') $('err-retry').focus();
 }
 
-async function load() {
-  const status = $('status');
-  text(status, 'Loading…').hidden = false;
-  const r = await fetch(`/api/data?days=${$('range').value}`);
-  if (r.status === 401) return show(false);
-  const j = await r.json();
-  show(true);
-  if (!r.ok) return void text(status, `Couldn't load your data: ${j.error}`);
+function notify(msg, retry = false) {
+  $('notice').hidden = !msg;
+  text($('notice-text'), msg ?? '');
+  $('notice-retry').hidden = !retry;
+}
+
+// Cache the last good payload per range so a bad connection still shows something. It lives in this
+// browser only and is wiped on logout/401; shortcut: no encryption, anyone with this browser profile can read it.
+const CACHE = 'gc:data:';
+const saveCache = (days, payload) => { try { localStorage.setItem(CACHE + days, JSON.stringify({ savedAt: Date.now(), payload })); } catch { /* storage full or blocked */ } };
+const loadCache = (days) => { try { return JSON.parse(localStorage.getItem(CACHE + days)); } catch { return null; } };
+const wipeCache = () => { try { Object.keys(localStorage).filter((k) => k.startsWith(CACHE)).forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ } };
+
+let inflight = null;
+async function fetchData(days) {
+  inflight?.abort();
+  const ctl = (inflight = new AbortController());
+  const timer = setTimeout(() => ctl.abort('timeout'), 25000);
+  try {
+    const r = await fetch(`/api/data?days=${days}`, { signal: ctl.signal });
+    if (r.status === 401) return (await r.text(), { unauthorized: true });
+    const j = await r.json().catch(() => ({}));
+    return r.ok ? { j } : { err: { status: r.status, message: j.error ?? `HTTP ${r.status}` } };
+  } catch (e) {
+    if (ctl.signal.aborted && ctl.signal.reason !== 'timeout') return { superseded: true }; // a newer request replaced this one
+    return { err: { status: ctl.signal.reason === 'timeout' ? 'timeout' : 0, message: e.message } };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function apply(j, stale) {
   state = { ...j, days: withLoad(j.days, j.activities) };
+  show('app');
   const skipped = Object.values(j.skipped ?? {}).reduce((a, b) => a + b, 0);
-  status.hidden = !skipped;
-  if (skipped) text(status, `${skipped} Garmin records had no date and were left out.`);
+  if (stale) {
+    const [title] = friendly(stale.err);
+    notify(`Showing data saved ${new Date(stale.savedAt).toLocaleString()}. ${title}.`, true);
+  } else {
+    notify(skipped ? `${skipped} Garmin records had no date and were left out.` : '');
+  }
   $('demo').hidden = !j.demo;
-  text($('updated'), `Updated ${new Date(j.fetchedAt).toLocaleString()}`);
+  text($('updated'), stale ? `Last synced ${new Date(stale.savedAt).toLocaleString()}` : `Updated ${new Date(j.fetchedAt).toLocaleString()}`);
   select(tab);
 }
 
+async function load() {
+  const days = $('range').value;
+  if (state) text($('updated'), 'Refreshing…');
+  else show('boot');
+  const out = await fetchData(days);
+  if (out.superseded) return;
+  if (out.unauthorized) return (state = null, wipeCache(), show('login'));
+  if (out.j) {
+    saveCache(days, out.j);
+    return apply(out.j, null);
+  }
+  const cached = loadCache(days);
+  if (cached) return apply(cached.payload, { savedAt: cached.savedAt, err: out.err });
+  const [title, hint] = friendly(out.err);
+  text($('err-title'), title);
+  text($('err-hint'), hint);
+  text($('err-detail'), out.err.message && out.err.status !== 0 ? `Details: ${out.err.message}` : ''); // offline detail is browser jargon
+  show('error');
+}
+
 $('range').addEventListener('change', load);
+$('err-retry').addEventListener('click', load);
+$('notice-retry').addEventListener('click', load);
 $('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = $('login-err');
+  const btn = e.target.querySelector('button');
   err.hidden = true;
-  const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('pw').value }) });
-  if (r.ok) return void ($('pw').value = '', load());
-  text(err, (await r.json()).error ?? 'Login failed').hidden = false;
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('pw').value }) });
+    if (r.ok) return void (($('pw').value = ''), load());
+    text(err, (await r.json().catch(() => ({}))).error ?? 'Login failed').hidden = false;
+  } catch {
+    text(err, "Can't reach the dashboard. Check your connection and try again.").hidden = false;
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 load();

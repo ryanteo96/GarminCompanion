@@ -98,3 +98,14 @@ tbody tr:hover { background: var(--muted); }
 .how summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--primary); font-weight: 500; }
 .how p { margin: var(--sp-2) 0 0; max-width: 70ch; font-size: 0.875rem; color: var(--mfg); }
 @media (max-width: 760px) { .today { grid-template-columns: 1fr; padding: var(--sp-4); } }
+
+/* ---- Loading, error and empty states ---- */
+.boot { max-width: 1280px; margin: 0 auto; padding: var(--sp-4); display: grid; gap: var(--sp-3); }
+.boot p { margin: 0; }
+.skel-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-3); }
+.skel { display: block; height: 84px; background: var(--muted); animation: pulse 1.4s ease-in-out infinite; }
+.skel.tall { height: 220px; }
+@keyframes pulse { 50% { opacity: 0.55; } }
+.notice { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--muted); border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; }
+.btn.small { min-height: 44px; background: var(--card); color: var(--primary); }
+.empty { margin: 0; height: 100%; display: grid; place-items: center; text-align: center; }

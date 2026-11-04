@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import { test } from 'node:test';
 import { authed, mintCookie, same } from '../lib/auth.js';
 import { addDays, normalize, parseToken, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
+import { friendly } from '../public/errors.js';
 import { corr, explain, insights, loadSeries, readiness, weekStart, withLoad } from '../public/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
@@ -90,4 +92,28 @@ test('readiness states, headline, driver values and explanation', () => {
   assert.equal(good.parts.length, 4); // sentence names at most 3 drivers, the bars show all 4
   assert.equal(explain(at({ hrv: 51, restingHr: 55.5, sleepH: 7.1, bbHigh: 81 })), 'Everything is close to your own 28-day norm.');
   assert.equal(readiness(flat.slice(0, 5)), null);
+});
+
+test('friendly error copy covers offline, timeout, rate limit, bad key and server errors', () => {
+  assert.match(friendly({ status: 0 })[0], /Can't reach/);
+  assert.match(friendly({ status: 'timeout' })[0], /too long/);
+  assert.match(friendly({ status: 502, message: 'Garmin /sleep-service returned 429' })[0], /limiting requests/);
+  assert.match(friendly({ status: 502, message: 'Garmin token exchange failed (401)' })[0], /API key/);
+  assert.match(friendly({ status: 502, message: 'Garmin /x returned 500' })[0], /Garmin/);
+  assert.match(friendly({ status: 500, message: 'boom' })[0], /Something went wrong/);
+});
+
+test('dev server returns 404 for a missing static file and keeps running', async () => {
+  const port = 41000 + Math.floor(Math.random() * 1000);
+  const child = spawn(process.execPath, ['dev.js'], { env: { ...process.env, PORT: String(port) }, stdio: ['ignore', 'pipe', 'pipe'] });
+  try {
+    await new Promise((resolve, reject) => {
+      child.stdout.once('data', resolve);
+      child.once('exit', () => reject(new Error('dev server exited before listening')));
+    });
+    assert.equal((await fetch(`http://localhost:${port}/favicon.ico`)).status, 404);
+    assert.equal((await fetch(`http://localhost:${port}/`)).status, 200, 'server must survive the 404');
+  } finally {
+    child.kill();
+  }
 });

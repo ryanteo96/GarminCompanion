@@ -19,7 +19,8 @@ http.createServer(async (req, res) => {
   if (!/^\/[\w./-]*$/.test(path) || path.includes('..')) return res.writeHead(404).end();
   try {
     const file = join('public', path.endsWith('/') ? `${path}index.html` : path);
-    res.writeHead(200, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream' }).end(await readFile(file));
+    const body = await readFile(file); // read first: sending the 200 header before a failed read crashed the server
+    res.writeHead(200, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream' }).end(body);
   } catch {
     res.writeHead(404).end();
   }
