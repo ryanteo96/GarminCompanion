@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <title>Garmin Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <section id="login" class="login" hidden>
+    <form id="login-form" class="card login-card">
+      <h1>Garmin Companion</h1>
+      <p class="muted">Your data is private. Enter the dashboard password.</p>
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <p id="login-err" class="err" role="alert" hidden></p>
+      <button class="btn primary" type="submit">Unlock</button>
+    </form>
+  </section>
+
+  <div id="app" hidden>
+    <header class="top">
+      <h1>Garmin Companion</h1>
+      <span id="demo" class="badge" hidden>Demo data</span>
+      <span id="updated" class="muted small"></span>
+      <label class="range">Range
+        <select id="range">
+          <option value="30">30 days</option>
+          <option value="90" selected>90 days</option>
+          <option value="180">180 days</option>
+          <option value="365">1 year</option>
+        </select>
+      </label>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Dashboard sections">
+      <button role="tab" id="t-recovery" aria-controls="p-recovery" data-tab="recovery">Recovery</button>
+      <button role="tab" id="t-training" aria-controls="p-training" data-tab="training">Training</button>
+      <button role="tab" id="t-activity" aria-controls="p-activity" data-tab="activity">Activity</button>
+      <button role="tab" id="t-insights" aria-controls="p-insights" data-tab="insights">Insights</button>
+    </div>
+
+    <main id="main">
+      <p id="status" class="muted" role="status">Loading…</p>
+
+      <section id="p-recovery" role="tabpanel" aria-labelledby="t-recovery" hidden>
+        <div class="kpis" id="k-recovery"></div>
+        <div class="grid">
+          <figure class="card"><figcaption>Heart rate variability (ms)</figcaption><div class="cv"><canvas id="c-hrv" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Resting heart rate (bpm)</figcaption><div class="cv"><canvas id="c-rhr" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Sleep stages (hours)</figcaption><div class="cv"><canvas id="c-sleep" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Body Battery, daily high and low</figcaption><div class="cv"><canvas id="c-bb" role="img"></canvas></div></figure>
+        </div>
+      </section>
+
+      <section id="p-training" role="tabpanel" aria-labelledby="t-training" hidden>
+        <div class="kpis" id="k-training"></div>
+        <div class="grid">
+          <figure class="card"><figcaption>Weekly training load</figcaption><div class="cv"><canvas id="c-wload" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Acute (7-day) vs chronic (28-day weekly average) load</figcaption><div class="cv"><canvas id="c-ac" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Time in heart-rate zones, last 28 days (minutes)</figcaption><div class="cv"><canvas id="c-zones" role="img"></canvas></div></figure>
+          <div class="card wide">
+            <h2 class="cap">Recent activities</h2>
+            <div class="tablewrap"><table id="acts"><thead><tr><th>Date</th><th>Name</th><th>Type</th><th class="num">Min</th><th class="num">km</th><th class="num">Avg HR</th><th class="num">Load</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="p-activity" role="tabpanel" aria-labelledby="t-activity" hidden>
+        <div class="kpis" id="k-activity"></div>
+        <div class="grid">
+          <figure class="card"><figcaption>Daily steps</figcaption><div class="cv"><canvas id="c-steps" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Weekly intensity minutes (goal 150)</figcaption><div class="cv"><canvas id="c-im" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Calories burned</figcaption><div class="cv"><canvas id="c-cal" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Average stress</figcaption><div class="cv"><canvas id="c-stress" role="img"></canvas></div></figure>
+        </div>
+      </section>
+
+      <section id="p-insights" role="tabpanel" aria-labelledby="t-insights" hidden>
+        <div class="card">
+          <h2 class="cap">Last 7 days vs the 21 days before</h2>
+          <div class="tablewrap"><table id="deltas"><thead><tr><th>Metric</th><th class="num">Last 7 days</th><th class="num">Before</th><th class="num">Change</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <h2 class="cap pad">What moves together in your data</h2>
+        <div id="insights" class="grid"></div>
+        <p class="muted small">These are patterns in your own history, not medical advice. Readiness is a simple score computed here from your 28-day baseline, not a Garmin metric.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/vendor/chart.umd.min.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
