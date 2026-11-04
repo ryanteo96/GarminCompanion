@@ -111,7 +111,7 @@
       <section id="p-training" role="tabpanel" aria-labelledby="t-training" hidden>
         <div class="kpis" id="k-training"></div>
         <div class="grid">
-          <figure class="card"><figcaption>Weekly training load</figcaption><div class="cv"><canvas id="c-wload" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption id="cap-wload">Weekly training load</figcaption><div class="cv"><canvas id="c-wload" role="img"></canvas></div></figure>
           <figure class="card"><figcaption>Acute (7-day) vs chronic (28-day weekly average) load</figcaption><div class="cv"><canvas id="c-ac" role="img"></canvas></div></figure>
           <figure class="card"><figcaption>Time in heart-rate zones, last 28 days (minutes)</figcaption><div class="cv"><canvas id="c-zones" role="img"></canvas></div></figure>
           <div class="card wide">
@@ -126,14 +126,14 @@
         <div class="kpis" id="k-activity"></div>
         <div class="grid">
           <figure class="card"><figcaption>Daily steps</figcaption><div class="cv"><canvas id="c-steps" role="img"></canvas></div></figure>
-          <figure class="card"><figcaption>Weekly intensity minutes (goal 150)</figcaption><div class="cv"><canvas id="c-im" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption id="cap-im">Weekly intensity minutes</figcaption><div class="cv"><canvas id="c-im" role="img"></canvas></div></figure>
           <figure class="card"><figcaption>Average stress</figcaption><div class="cv"><canvas id="c-stress" role="img"></canvas></div></figure>
         </div>
       </section>
 
       <section id="p-insights" role="tabpanel" aria-labelledby="t-insights" hidden>
         <div class="card">
-          <h2 class="cap">Last 7 days vs the 21 days before</h2>
+          <h2 id="deltas-h" class="cap">Last 7 days vs the 21 days before</h2>
           <div class="tablewrap" role="region" aria-label="Weekly changes table" tabindex="-1"><table id="deltas"><thead><tr><th>Metric</th><th class="num">Last 7 days</th><th class="num">Before</th><th class="num">Change</th></tr></thead><tbody></tbody></table></div>
         </div>
         <h2 class="cap pad">What moves together in your data</h2>

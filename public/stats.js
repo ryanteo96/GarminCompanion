@@ -114,6 +114,9 @@ export function band(values, win = 28) {
   });
 }
 
+// A week is partial when the data range starts or ends inside it (the current week is always partial until Sunday).
+export const isPartialWeek = (week, firstDate, lastDate) => week < firstDate || shift(week, 6) > lastDate;
+
 export function weekly(days, key, agg = 'sum') {
   const g = new Map();
   for (const d of days) {
@@ -157,7 +160,7 @@ export function weekDeltas(days) {
   const before = days.slice(-28, -7);
   return [
     ['hrv', 'HRV', 'ms'], ['restingHr', 'Resting HR', 'bpm'], ['sleepH', 'Sleep', 'h'],
-    ['steps', 'Steps', ''], ['stress', 'Stress', ''], ['load', 'Training load', ''],
+    ['steps', 'Steps', 'per day'], ['stress', 'Stress', ''], ['load', 'Training load', 'per day'],
   ].flatMap(([k, label, unit]) => {
     const now = mean(recent.map((d) => d[k]));
     const prev = mean(before.map((d) => d[k]));

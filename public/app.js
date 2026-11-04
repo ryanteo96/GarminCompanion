@@ -1,6 +1,6 @@
 import { friendly } from './errors.js';
 import { ago } from './time.js';
-import { band, explain, insights, loadSeries, mean, ratioLabel, readiness, rolling, weekDeltas, weekly, withLoad } from './stats.js';
+import { band, explain, insights, isPartialWeek, loadSeries, mean, ratioLabel, readiness, rolling, weekDeltas, weekly, withLoad } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
@@ -14,6 +14,20 @@ const num = (x, dp = 0) => (x == null ? '—' : (Math.round(x * 10 ** dp) / 10 *
 const hm = (h) => (h == null ? '—' : `${Math.floor(h)}h ${String(Math.round((h % 1) * 60)).padStart(2, '0')}m`);
 const latest = (key) => state.days.findLast((d) => d[key] != null)?.[key] ?? null;
 const avg7 = (key) => mean(state.days.slice(-7).map((d) => d[key]));
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const localToday = () => ymd(new Date());
+const lastRow = (key) => state.days.findLast((d) => d[key] != null);
+// Most recent day Garmin reported anything for; readings older than this are labelled with their own date.
+const newest = () => state.days.findLast((d) => ['steps', 'hrv', 'sleepH', 'restingHr'].some((k) => d[k] != null))?.date;
+const withAge = (key, sub) => {
+  const r = lastRow(key);
+  return [r && r.date < newest() ? `From ${fmtDate(r.date)}` : '', sub].filter(Boolean).join(' · ');
+};
+// "Steps, today so far" while the day is still running, otherwise the day it is from.
+const dayLabel = (key, base) => {
+  const r = lastRow(key);
+  return !r ? base : `${base}, ${r.date === localToday() ? 'today so far' : fmtDate(r.date)}`;
+};
 const text = (el, s) => ((el.textContent = s), el);
 
 // ---------- drawing helpers ----------
@@ -124,7 +138,7 @@ function describe(name, values, unit = '') {
   return `${name}: latest ${num(v.at(-1), 1)}${unit}, average ${num(mean(v), 1)}${unit}, range ${num(Math.min(...v), 1)} to ${num(Math.max(...v), 1)}${unit} over ${v.length} points.`;
 }
 
-function draw(id, type, labels, datasets, { stacked = false, summary, horizontal = false, whole = false, yRange = {} } = {}) {
+function draw(id, type, labels, datasets, { stacked = false, summary, horizontal = false, whole = false, yRange = {}, tipTitle } = {}) {
   charts[id]?.destroy();
   const el = $(id);
   const host = el.parentElement;
@@ -166,7 +180,7 @@ function draw(id, type, labels, datasets, { stacked = false, summary, horizontal
         },
         tooltip: {
           filter: (item) => !item.dataset.noTip,
-          callbacks: { label: (c) => `${c.dataset.label}: ${Array.isArray(c.raw) ? c.raw.join(' to ') : c.formattedValue}` },
+          callbacks: { ...(tipTitle && { title: tipTitle }), label: (c) => `${c.dataset.label}: ${Array.isArray(c.raw) ? c.raw.join(' to ') : c.formattedValue}` },
         },
       },
       scales: {
@@ -236,10 +250,10 @@ function recovery() {
   today(r, d);
   const sleepScore = latest('sleepScore');
   kpis('k-recovery', [
-    ['HRV, last night', `${num(latest('hrv'))} ms`, `7-day avg ${num(avg7('hrv'))} ms`],
-    ['Resting HR', `${num(latest('restingHr'))} bpm`, `7-day avg ${num(avg7('restingHr'))} bpm`],
-    ['Sleep', hm(latest('sleepH')), sleepScore == null ? '' : `Score ${num(sleepScore)}`],
-    batteryCard(latest('bbHigh'), `7-day avg ${num(avg7('bbHigh'))}`),
+    ['HRV, last night', `${num(latest('hrv'))} ms`, withAge('hrv', `7-day avg ${num(avg7('hrv'))} ms`)],
+    ['Resting HR', `${num(latest('restingHr'))} bpm`, withAge('restingHr', `7-day avg ${num(avg7('restingHr'))} bpm`)],
+    ['Sleep', hm(latest('sleepH')), withAge('sleepH', sleepScore == null ? '' : `Score ${num(sleepScore)}`)],
+    batteryCard(latest('bbHigh'), withAge('bbHigh', `7-day avg ${num(avg7('bbHigh'))}`)),
   ]);
   const s1 = css('--s1');
   draw('c-hrv', 'line', dates, trend(col('hrv'), s1, 'Last night', true), { summary: describe('HRV', col('hrv'), ' ms'), whole: true });
@@ -257,9 +271,21 @@ function sleepChart(d) {
   const labels = nightly ? d.map((x) => fmtDate(x.date)) : [...byWeek(d, 'sleepH').keys()].map(fmtDate);
   text($('cap-sleep'), nightly ? 'Sleep stages, nightly (hours)' : 'Sleep stages, weekly average per night (hours)');
   const seg = (name, k, token) => ({ ...bar(name, stage(k), css(token)), borderColor: css('--card'), borderWidth: 1 });
-  draw('c-sleep', 'bar', labels, [seg('Deep', 'deepH', '--sl-deep'), seg('REM', 'remH', '--sl-rem'), seg('Light', 'lightH', '--sl-light'), seg('Awake', 'awakeH', '--sl-awake')], { stacked: true, summary: describe('Total sleep', d.map((x) => x.sleepH), ' h') });
+  draw('c-sleep', 'bar', labels, [seg('Deep', 'deepH', '--sl-deep'), seg('REM', 'remH', '--sl-rem'), seg('Light', 'lightH', '--sl-light'), seg('Awake', 'awakeH', '--sl-awake')], { stacked: true, summary: describe('Total sleep', d.map((x) => x.sleepH), ' h'), tipTitle: nightly ? undefined : (items) => `Week of ${items[0].label}` });
 }
 const byWeek = (d, k) => new Map(weekly(d, k, 'mean').map((x) => [x.week, x.v]));
+
+// Weeks start Monday. A week the data only partly covers is drawn lighter and named in the tooltip.
+function weekBars(w, d, color) {
+  const first = d[0].date, last = d.at(-1).date;
+  const partial = w.map((x) => isPartialWeek(x.week, first, last));
+  return {
+    any: partial.some(Boolean),
+    colors: w.map((_, i) => (partial[i] ? alpha(color, 0.45) : color)),
+    title: (items) => `Week of ${items[0].label}${partial[items[0].dataIndex] ? (w[items[0].dataIndex].week < first ? ' (partial week)' : ' (so far)') : ''}`,
+    last: partial.at(-1),
+  };
+}
 
 function training() {
   const d = state.days, ls = loadSeries(d), last = ls.at(-1);
@@ -273,7 +299,9 @@ function training() {
   ]);
   const s1 = css('--s1'), s2 = css('--s2');
   const w = weekly(d, 'load');
-  draw('c-wload', 'bar', w.map((x) => fmtDate(x.week)), [bar('Load', w.map((x) => x.v), s1)], { summary: describe('Weekly training load', w.map((x) => x.v)) });
+  const wk_ = weekBars(w, d, s1);
+  text($('cap-wload'), `Weekly training load${wk_.any ? ' (lighter = partial week)' : ''}`);
+  draw('c-wload', 'bar', w.map((x) => fmtDate(x.week)), [bar('Load', w.map((x) => x.v), wk_.colors)], { summary: describe('Weekly training load', w.map((x) => x.v)), tipTitle: wk_.title });
   draw('c-ac', 'line', ls.map((x) => fmtDate(x.date)), [line('Acute (7-day)', ls.map((x) => x.acute), s1), line('Chronic (weekly avg)', ls.map((x) => x.chronic), s2, true)], { summary: describe('Acute training load', ls.map((x) => x.acute)) });
 
   const z = [0, 0, 0, 0, 0];
@@ -314,19 +342,22 @@ function activity() {
   const roll = d.map((_, i) => mean(d.slice(Math.max(0, i - 6), i + 1).map((x) => x.steps)));
   const im = weekly(d, 'intensityMin');
   const thisWeek = im.at(-1)?.v;
+  const imBars = weekBars(im, d, css('--s1'));
   kpis('k-activity', [
-    ['Steps, latest day', num(latest('steps')), `7-day avg ${num(avg7('steps'))}`],
-    ['Intensity minutes', num(thisWeek), 'this week, goal 150', thisWeek >= 150 ? 'Goal reached' : ''],
-    ['Calories burned', num(latest('calories')), `7-day avg ${num(avg7('calories'))}`],
-    ['Average stress', num(latest('stress')), `7-day avg ${num(avg7('stress'))}`],
+    [dayLabel('steps', 'Steps'), num(latest('steps')), `7-day avg ${num(avg7('steps'))}`],
+    ['Intensity minutes', num(thisWeek), `this week${imBars.last ? ' so far' : ''}, goal 150`, thisWeek >= 150 ? 'Goal reached' : ''],
+    [dayLabel('calories', 'Calories burned'), num(latest('calories')), `7-day avg ${num(avg7('calories'))}`],
+    [dayLabel('stress', 'Average stress'), num(latest('stress')), `7-day avg ${num(avg7('stress'))}`],
   ]);
   const s1 = css('--s1'), s2 = css('--s2');
   draw('c-steps', 'bar', dates, [bar('Steps', col('steps'), alpha(s1, 0.45)), { ...line('7-day average', roll, s1), type: 'line', borderWidth: 3, pointRadius: 0 }], { summary: describe('Daily steps', col('steps')) });
-  draw('c-im', 'bar', im.map((x) => fmtDate(x.week)), [bar('Intensity minutes', im.map((x) => x.v), s1), { ...line('Goal', im.map(() => 150), s2, true), type: 'line', pointRadius: 0 }], { summary: describe('Weekly intensity minutes', im.map((x) => x.v)) });
+  text($('cap-im'), `Weekly intensity minutes${imBars.any ? ' (lighter = partial week)' : ''}`);
+  draw('c-im', 'bar', im.map((x) => fmtDate(x.week)), [bar('Intensity minutes', im.map((x) => x.v), imBars.colors), { ...line('Goal', im.map(() => 150), s2, true), type: 'line', pointRadius: 0 }], { summary: describe('Weekly intensity minutes', im.map((x) => x.v)), tipTitle: imBars.title });
   draw('c-stress', 'line', dates, trend(col('stress'), s1, 'Average stress'), { summary: describe('Average stress', col('stress')), whole: true });
 }
 
 function insightsPanel() {
+  text($('deltas-h'), `Last 7 days vs the 21 days before (through ${fmtDate(newest())})`);
   $('deltas').tBodies[0].replaceChildren(
     ...weekDeltas(state.days).map((x) => {
       const tr = document.createElement('tr');
@@ -425,7 +456,7 @@ let fresh = null;
 function showFresh() {
   if (!fresh) return;
   const u = $('updated');
-  text(u, `${fresh.label} ${ago(fresh.ts)}`);
+  text(u, [`${fresh.label} ${ago(fresh.ts)}`, `Latest data ${fmtDate(fresh.through)}`, fresh.behind && 'nothing for today yet'].filter(Boolean).join(' · '));
   u.title = new Date(fresh.ts).toLocaleString();
 }
 setInterval(showFresh, 60000);
@@ -436,7 +467,7 @@ async function fetchData(days) {
   const ctl = (inflight = new AbortController());
   const timer = setTimeout(() => ctl.abort('timeout'), 25000);
   try {
-    const r = await fetch(`/api/data?days=${days}`, { signal: ctl.signal });
+    const r = await fetch(`/api/data?days=${days}&today=${localToday()}`, { signal: ctl.signal });
     if (r.status === 401) return (await r.text(), { unauthorized: true });
     const j = await r.json().catch(() => ({}));
     return r.ok ? { j } : { err: { status: r.status, message: j.error ?? `HTTP ${r.status}` } };
@@ -459,7 +490,8 @@ function apply(j, stale) {
     notify(skipped ? `${skipped} Garmin records had no date and were left out.` : '');
   }
   $('demo').hidden = !j.demo;
-  fresh = stale ? { ts: stale.savedAt, label: 'Last synced' } : { ts: Date.parse(j.fetchedAt), label: 'Updated' };
+  const through = newest();
+  fresh = { ...(stale ? { ts: stale.savedAt, label: 'Last synced' } : { ts: Date.parse(j.fetchedAt), label: 'Updated' }), through, behind: through < localToday() };
   showFresh();
   select(tab);
 }

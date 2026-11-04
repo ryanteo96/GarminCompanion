@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { test } from 'node:test';
 import { authed, mintCookie, same } from '../lib/auth.js';
-import { addDays, clock, normalize, parseToken, ranges, token } from '../lib/garmin.js';
+import { addDays, clock, normalize, parseToken, pickToday, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
 import { friendly } from '../public/errors.js';
 import { ago } from '../public/time.js';
-import { band, corr, explain, insights, loadSeries, readiness, rolling, weekStart, withLoad } from '../public/stats.js';
+import { band, corr, explain, isPartialWeek, insights, loadSeries, readiness, rolling, weekStart, withLoad } from '../public/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
 
@@ -145,4 +145,24 @@ test('ago gives a relative freshness label', () => {
   assert.equal(ago(now - 3 * 3600e3, now), '3 h ago');
   assert.equal(ago(now + 5e3, now), 'just now', 'clock skew must not go negative');
   assert.match(ago(now - 3 * 86400e3, now), /\w/);
+});
+
+test('pickToday trusts a plausible local date and falls back to UTC otherwise', () => {
+  const now = new Date('2026-11-04T22:30:00Z'); // 06:30 on Nov 5 in Singapore
+  assert.equal(pickToday('2026-11-05', now), '2026-11-05', 'a timezone ahead of UTC');
+  assert.equal(pickToday('2026-11-03', now), '2026-11-03', 'a timezone behind UTC');
+  assert.equal(pickToday('2026-11-07', now), '2026-11-04', 'more than a day away');
+  assert.equal(pickToday('2026-02-31', now), '2026-11-04', 'impossible date');
+  assert.equal(pickToday('not-a-date', now), '2026-11-04');
+  assert.equal(pickToday(null, now), '2026-11-04');
+  assert.equal(pickToday("2026-11-05'; DROP", now), '2026-11-04');
+});
+
+test('isPartialWeek flags the first and last week of a range', () => {
+  // data 2026-10-07 (Wed) to 2026-11-04 (Wed)
+  assert.ok(isPartialWeek('2026-10-05', '2026-10-07', '2026-11-04'), 'range starts mid-week');
+  assert.ok(!isPartialWeek('2026-10-12', '2026-10-07', '2026-11-04'));
+  assert.ok(isPartialWeek('2026-11-02', '2026-10-07', '2026-11-04'), 'current week ends after the data');
+  assert.ok(!isPartialWeek('2026-10-26', '2026-10-07', '2026-11-04'));
+  assert.ok(!isPartialWeek('2026-11-02', '2026-10-07', '2026-11-08'), 'complete once Sunday is in the data');
 });
