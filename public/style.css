@@ -78,6 +78,17 @@ tbody tr:hover { background: var(--muted); }
 .today[data-state="strained"] { --st: var(--st-strained); }
 .today[data-state="below"] { --st: var(--st-below); }
 .today[data-state="well"] { --st: var(--st-well); }
+/* The tone (the advice) colours the verdict and washes the card faintly, so a bad day looks different from a good
+   one at a glance. --st stays the recovery state, used by the score label. */
+.today { --tone: var(--st); background: color-mix(in srgb, var(--tone) 6%, var(--card)); }
+.today[data-tone="strained"] { --tone: var(--st-strained); }
+.today[data-tone="below"] { --tone: var(--st-below); }
+.today[data-tone="typical"] { --tone: var(--st-typical); }
+.today[data-tone="well"] { --tone: var(--st-well); }
+.today .verdict { color: var(--tone); }
+.today[data-state=""] { background: var(--card); }
+.today[data-state=""] .verdict { color: var(--fg); }
+.chip { display: inline-block; margin: 0 0 var(--sp-3); padding: var(--sp-1) var(--sp-3); border: 1px solid var(--border); border-radius: 12px; background: var(--card); font-size: 0.875rem; }
 .verdict { font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.125rem); line-height: 1.15; font-weight: 600; margin: 0; text-wrap: balance; }
 .detail { margin: var(--sp-2) 0 0; max-width: 60ch; text-wrap: pretty; }
 .today-main .small { margin: var(--sp-3) 0 0; }

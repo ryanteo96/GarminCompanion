@@ -1,6 +1,6 @@
 import { friendly } from './errors.js';
 import { ago } from './time.js';
-import { band, explain, insights, isPartialWeek, loadSeries, mean, ratioLabel, readiness, rolling, weekDeltas, weekly, withLoad } from './stats.js';
+import { band, explain, insights, isPartialWeek, loadSeries, mean, ratioLabel, readiness, rolling, verdict, verdictTone, weekDeltas, weekly, withLoad } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
@@ -203,23 +203,29 @@ const fmtVal = (k, v) => (k === 'sleepH' ? hm(v) : `${num(v)}${DRIVER[k][1] ? ` 
 function today(r, days) {
   const el = $('today');
   el.hidden = false;
-  const lastDate = days.at(-1).date;
   const ratio = loadSeries(days).at(-1).ratio;
   if (!r) {
     el.dataset.state = '';
+    el.dataset.tone = '';
     text($('today-h'), 'Not enough data yet');
     text($('today-detail'), 'Readiness needs about a week of HRV and sleep history to compare against.');
-    for (const sel of ['#today-load', '.today-score', '#drivers']) el.querySelector(sel).hidden = true;
+    for (const sel of ['#today-load', '.today-score', '#drivers', '#today-chip']) el.querySelector(sel).hidden = true;
     return;
   }
   for (const sel of ['#today-load', '.today-score', '#drivers']) el.querySelector(sel).hidden = false;
   el.dataset.state = r.state;
-  text($('today-h'), r.head);
+  el.dataset.tone = verdictTone(r, ratio);
+  text($('today-h'), verdict(r, ratio));
   text($('today-detail'), explain(r));
   text($('today-load'), ratio == null ? '' : `Training load ratio ${ratio.toFixed(2)}: ${ratioLabel(ratio).toLowerCase()}.`);
   text($('score-n'), String(r.score));
   text($('score-state'), r.label);
-  text($('today-date'), r.date === lastDate ? `Based on ${fmtDate(r.date)}.` : `Based on ${fmtDate(r.date)}. Garmin has not reported ${fmtDate(lastDate)} yet.`);
+  // A reading that isn't from today gets a chip at the top, where the verdict is read, with what to do about it.
+  const stale = r.date < localToday();
+  $('today-chip').hidden = !stale;
+  if (stale) text($('today-chip'), `Based on ${fmtDate(r.date)}, not today. Garmin hasn't reported today yet: sync your watch, then Refresh.`);
+  $('today-date').hidden = stale;
+  text($('today-date'), `Based on ${fmtDate(r.date)}.`);
   const scale = $('scale');
   scale.setAttribute('aria-label', `Readiness ${r.score} out of 100, ${r.label}. Zones: under 30 strained, 30 to 49 below usual, 50 to 69 typical, 70 and up well recovered.`);
   $('marker').style.left = `${r.score}%`;

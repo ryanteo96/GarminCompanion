@@ -59,13 +59,31 @@ export function readiness(days) {
     .filter(Boolean);
   if (parts.length < 2) return null;
   const score = Math.round(clamp(60 + 20 * mean(parts.map((p) => p.z)), 0, 100));
-  const [state, label, head] =
-    score >= 70 ? ['well', 'Well recovered', 'Good day for a hard session']
-    : score >= 50 ? ['typical', 'Typical for you', 'A normal training day fits']
-    : score >= 30 ? ['below', 'Below usual', 'Take it easier today']
-    : ['strained', 'Strained', 'Keep today easy'];
-  return { score, label, state, head, date: days[i].date, parts };
+  const [state, label] =
+    score >= 70 ? ['well', 'Well recovered']
+    : score >= 50 ? ['typical', 'Typical for you']
+    : score >= 30 ? ['below', 'Below usual']
+    : ['strained', 'Strained'];
+  return { score, label, state, date: days[i].date, parts };
 }
+
+// Load-ratio cut-offs, shared by the label and the verdict so they cannot drift apart.
+const LIGHT = 0.8, SWEET = 1.3, SPIKE = 1.5;
+export const loadBand = (ratio) => (ratio == null ? 'ok' : ratio < LIGHT ? 'light' : ratio > SPIKE ? 'spiking' : 'ok');
+
+// The headline answers "hard or easy today?" from recovery AND load, so a spiking load can't sit
+// under a "good day" and a light load explains a low-recovery day instead of seeming to contradict it.
+const HEAD = {
+  well: { light: 'Well recovered with a light load: room to push', ok: 'Good day for a hard session', spiking: 'Recovered, but your load is spiking: keep it moderate' },
+  typical: { light: 'A normal training day fits, and your load is light', ok: 'A normal training day fits', spiking: 'Your load is spiking: keep today easy' },
+  below: { light: 'Recovery is low despite a light load: keep it easy', ok: 'Take it easier today', spiking: 'Recovery is down and load is spiking: rest or go very easy' },
+  strained: { light: 'Recovery is very low even with a light load: keep it easy', ok: 'Keep today easy', spiking: 'Rest today: recovery is low and load is spiking' },
+};
+export const verdict = (r, ratio) => HEAD[r.state][loadBand(ratio)];
+
+// The colour of the headline follows the advice, not just the recovery score: a spiking load turns "recovered"
+// into caution so the words and the colour never disagree. The score label keeps the recovery state.
+export const verdictTone = (r, ratio) => (loadBand(ratio) === 'spiking' && (r.state === 'well' || r.state === 'typical') ? 'below' : r.state);
 
 const base_ = (days, i, k) => days.slice(Math.max(0, i - 28), i).map((d) => d[k]);
 
@@ -95,7 +113,7 @@ export function loadSeries(days) {
 }
 
 export const ratioLabel = (r) =>
-  r == null ? 'Not enough history' : r < 0.8 ? 'Lighter than usual' : r <= 1.3 ? 'In your sweet spot' : r <= 1.5 ? 'Ramping up' : 'Spiking';
+  r == null ? 'Not enough history' : r < LIGHT ? 'Lighter than usual' : r <= SWEET ? 'In your sweet spot' : r <= SPIKE ? 'Ramping up' : 'Spiking';
 
 // Trailing mean over the last `win` values; null until `min` readings exist.
 export function rolling(values, win = 7, min = 3) {

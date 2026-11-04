@@ -8,7 +8,7 @@ import data from '../api/data.js';
 import logout from '../api/logout.js';
 import { friendly } from '../public/errors.js';
 import { ago } from '../public/time.js';
-import { band, corr, explain, isPartialWeek, insights, loadSeries, readiness, rolling, weekDeltas, weekStart, withLoad } from '../public/stats.js';
+import { band, corr, explain, isPartialWeek, loadBand, insights, loadSeries, readiness, rolling, verdict, verdictTone, weekDeltas, weekStart, withLoad } from '../public/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
 
@@ -83,7 +83,7 @@ test('readiness states, headline, driver values and explanation', () => {
   const at = (last) => readiness([...flat, { date: '2026-10-31', ...last }]);
   const bad = at({ hrv: 30, restingHr: 66, sleepH: 4.5, bbHigh: 55 });
   assert.equal(bad.state, 'strained');
-  assert.equal(bad.head, 'Keep today easy');
+  assert.equal(verdict(bad, 1), 'Keep today easy');
   assert.equal(bad.parts.find((p) => p.k === 'hrv').value, 30);
   assert.ok(bad.parts.find((p) => p.k === 'hrv').base > 49);
   const why = explain(bad);
@@ -230,4 +230,34 @@ test('correlations show no number below 14 overlapping days', () => {
   assert.ok(thin.every((i) => i.r === null && /Not enough/.test(i.text)), 'four days: r is withheld, not 1.00');
   const edge = insights(withLoad(days.slice(-15), activities)).find((i) => i.lag === 0);
   assert.ok(edge.n >= 14 ? edge.r != null : edge.r === null, 'the threshold follows n');
+});
+
+test('verdict combines recovery and load, and never says "hard session" over a spiking load', () => {
+  assert.equal(loadBand(null), 'ok');
+  assert.equal(loadBand(0.79), 'light');
+  assert.equal(loadBand(0.8), 'ok');
+  assert.equal(loadBand(1.5), 'ok', '1.5 is still "ramping up", not spiking');
+  assert.equal(loadBand(1.51), 'spiking');
+  const r = (state) => ({ state });
+  assert.equal(verdict(r('well'), 1.0), 'Good day for a hard session');
+  assert.equal(verdict(r('well'), null), 'Good day for a hard session', 'no load history: recovery decides');
+  assert.match(verdict(r('well'), 1.94), /load is spiking: keep it moderate/);
+  assert.doesNotMatch(verdict(r('well'), 1.94), /hard session/);
+  assert.match(verdict(r('well'), 0.5), /light load: room to push/);
+  assert.match(verdict(r('strained'), 0.77), /despite|even with a light load/, 'explains the apparent contradiction instead of ignoring it');
+  assert.match(verdict(r('strained'), 1.94), /^Rest today/);
+  for (const st of ['well', 'typical', 'below', 'strained']) {
+    const heads = new Set(['light', 'ok', 'spiking'].map((b) => verdict(r(st), { light: 0.5, ok: 1, spiking: 2 }[b])));
+    assert.equal(heads.size, 3, `${st}: each load band reads differently`);
+  }
+});
+
+test('verdict colour follows the advice: a spiking load cannot be green', () => {
+  assert.equal(verdictTone({ state: 'well' }, 1.0), 'well');
+  assert.equal(verdictTone({ state: 'well' }, 1.94), 'below', 'recovered but spiking reads as caution');
+  assert.equal(verdictTone({ state: 'typical' }, 2), 'below');
+  assert.equal(verdictTone({ state: 'below' }, 2), 'below');
+  assert.equal(verdictTone({ state: 'strained' }, 2), 'strained', 'already the most cautious tone, never softened');
+  assert.equal(verdictTone({ state: 'strained' }, 0.5), 'strained', 'a light load does not soften a strained day');
+  assert.equal(verdictTone({ state: 'well' }, null), 'well');
 });
