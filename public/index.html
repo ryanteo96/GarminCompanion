@@ -32,7 +32,7 @@
   <section id="login" class="login" hidden>
     <form id="login-form" class="card login-card">
       <h1>Garmin Companion</h1>
-      <p class="muted">Your data is private. Enter the dashboard password.</p>
+      <p class="muted">This dashboard is private.</p>
       <label for="pw">Password</label>
       <input id="pw" type="password" autocomplete="current-password" required>
       <label class="showpw"><input id="showpw" type="checkbox"> Show password</label>
@@ -50,8 +50,8 @@
         <button id="refresh" class="refresh" type="button">Refresh</button>
         <span id="sr-status" class="sr-only" role="status"></span>
       </div>
-      <label class="range"><span class="lbl">Range</span>
-        <select id="range" title="Applies to the charts and trends; the cards use fixed 7-day windows">
+      <label class="range"><span class="lbl">Chart range</span>
+        <select id="range" aria-describedby="range-note">
           <option value="30">30 days</option>
           <option value="90" selected>90 days</option>
           <option value="180">180 days</option>
@@ -87,7 +87,7 @@
             </div>
             <p id="today-date" class="small muted"></p>
           </div>
-          <div class="drivers" id="drivers" aria-label="What is driving the score"></div>
+          <div class="drivers" id="drivers" role="group" aria-label="What is driving the score"></div>
           <details class="how">
             <summary>How is this scored?</summary>
             <p>Readiness compares last night's HRV, resting heart rate, sleep time and Body Battery peak with your own previous 28 days. 60 means typical for you, and each standard deviation from your norm moves it 20 points. Under 30 is strained, 30 to 49 below usual, 50 to 69 typical, 70 and up well recovered. It is a simple guide computed here, not a Garmin metric and not medical advice.</p>
@@ -170,6 +170,7 @@
     <footer class="foot">
       <button id="logout" class="btn small" type="button">Sign out</button>
       <span class="muted small">Signing out also clears the copy of your data cached in this browser.</span>
+      <span id="range-note" class="muted small">The chart range changes the charts and trends. The Today summary and the cards always use fixed windows (the last 7 and 28 days).</span>
     </footer>
   </div>
 

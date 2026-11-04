@@ -33,6 +33,9 @@ const text = (el, s) => ((el.textContent = s), el);
 
 // ---------- drawing helpers ----------
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Chart.js reads the font from its defaults; a per-chart options.font.family is ignored by this build.
+Chart.defaults.font.family = '"Fira Sans", system-ui, sans-serif';
+document.fonts?.ready.then(() => render()); // redraw once the web font is in, so canvas text never stays in the fallback
 
 function kpis(id, items) {
   $(id).replaceChildren(
@@ -54,7 +57,7 @@ function kpis(id, items) {
 }
 
 const line = (label, data, color, dash = false) => ({
-  label, data, borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.25, spanGaps: true,
+  label, data, borderColor: color, backgroundColor: color, borderWidth: 2, cubicInterpolationMode: 'monotone', spanGaps: true, // monotone: smooth without overshooting between points
   pointRadius: data.length > 60 ? 0 : 2, borderDash: dash ? [6, 4] : [],
 });
 const bar = (label, data, color) => ({ label, data, backgroundColor: color, borderRadius: 2 });
@@ -68,10 +71,10 @@ function trend(values, color, name, withBand = false) {
   ];
   if (!withBand) return lines;
   const b = band(values);
-  const edge = { borderWidth: 0, pointRadius: 0, spanGaps: true, noTip: true };
+  const edge = { borderWidth: 0, pointRadius: 0, spanGaps: true, noTip: true, cubicInterpolationMode: 'monotone' };
   return [
     { label: '_low', data: b.map((x) => x?.lo ?? null), fill: false, ...edge },
-    { label: 'Your normal range', data: b.map((x) => x?.hi ?? null), fill: '-1', backgroundColor: alpha(css('--s2'), 0.22), swatch: 'rect', ...edge },
+    { label: 'Your normal range', data: b.map((x) => x?.hi ?? null), fill: '-1', backgroundColor: alpha(css('--mfg'), 0.18), swatch: 'rect', ...edge }, // neutral: amber means "reference line" and went muddy on dark
     ...lines,
   ];
 }
@@ -169,7 +172,6 @@ function draw(id, type, labels, datasets, { stacked = false, summary, horizontal
       maintainAspectRatio: false,
       animation: reduced ? false : { duration: 300 },
       interaction: { mode: 'index', intersect: false },
-      font: { family: '"Fira Sans", system-ui, sans-serif' },
       plugins: {
         legend: {
           display: datasets.filter((d) => !d.label.startsWith('_')).length > 1,
@@ -267,7 +269,7 @@ function recovery() {
     batteryCard(latest('bbHigh'), withAge('bbHigh', `7-day avg ${num(avg7('bbHigh'))}`)),
   ]);
   const s1 = css('--s1');
-  draw('c-hrv', 'line', dates, trend(col('hrv'), s1, 'Last night', true), { summary: describe('HRV', col('hrv'), ' ms'), whole: true });
+  draw('c-hrv', 'line', dates, trend(col('hrv'), s1, 'Daily HRV', true), { summary: describe('HRV', col('hrv'), ' ms'), whole: true });
   draw('c-rhr', 'line', dates, trend(col('restingHr'), s1, 'Resting HR', true), { summary: describe('Resting heart rate', col('restingHr'), ' bpm'), whole: true });
   const range = d.map((x) => (x.bbLow != null && x.bbHigh != null ? [x.bbLow, x.bbHigh] : null));
   draw('c-bb', 'bar', dates, [{ ...bar('Daily range', range, css('--bb')), borderSkipped: false }], { summary: describe('Body Battery daily high', col('bbHigh')), yRange: { min: 0, max: 100 } });
@@ -282,7 +284,7 @@ function sleepChart(d) {
   const labels = nightly ? d.map((x) => fmtDate(x.date)) : [...byWeek(d, 'sleepH').keys()].map(fmtDate);
   text($('cap-sleep'), nightly ? 'Sleep stages, nightly (hours)' : 'Sleep stages, weekly average per night (hours)');
   const seg = (name, k, token) => ({ ...bar(name, stage(k), css(token)), borderColor: css('--card'), borderWidth: 1 });
-  draw('c-sleep', 'bar', labels, [seg('Deep', 'deepH', '--sl-deep'), seg('REM', 'remH', '--sl-rem'), seg('Light', 'lightH', '--sl-light'), seg('Awake', 'awakeH', '--sl-awake')], { stacked: true, summary: describe('Total sleep', d.map((x) => x.sleepH), ' h'), tipTitle: nightly ? undefined : (items) => `Week of ${items[0].label}` });
+  draw('c-sleep', 'bar', labels, [seg('Deep', 'deepH', '--sl-deep'), seg('REM', 'remH', '--sl-rem'), seg('Light', 'lightH', '--sl-light'), seg('Awake', 'awakeH', '--sl-awake')], { stacked: true, summary: `Sleep stages (deep, REM, light, awake) in hours. ${describe('Total sleep', d.map((x) => x.sleepH), ' h')}`, tipTitle: nightly ? undefined : (items) => `Week of ${items[0].label}` });
 }
 const byWeek = (d, k) => new Map(weekly(d, k, 'mean').map((x) => [x.week, x.v]));
 
@@ -343,7 +345,7 @@ function training() {
   const wk_ = weekBars(w, d, s1);
   text($('cap-wload'), `Weekly training load${wk_.any ? ' (lighter = partial week)' : ''}`);
   draw('c-wload', 'bar', w.map((x) => fmtDate(x.week)), [bar('Load', w.map((x) => x.v), wk_.colors)], { summary: describe('Weekly training load', w.map((x) => x.v)), tipTitle: wk_.title });
-  draw('c-ac', 'line', ls.map((x) => fmtDate(x.date)), [line('Acute (7-day)', ls.map((x) => x.acute), s1), line('Chronic (weekly avg)', ls.map((x) => x.chronic), s2, true)], { summary: describe('Acute training load', ls.map((x) => x.acute)) });
+  draw('c-ac', 'line', ls.map((x) => fmtDate(x.date)), [line('Acute (7-day)', ls.map((x) => x.acute), s1), line('Chronic (weekly avg)', ls.map((x) => x.chronic), s2, true)], { summary: `Acute (7-day) and chronic (28-day weekly average) training load. ${describe('Acute load', ls.map((x) => x.acute))}` });
 
   const z = [0, 0, 0, 0, 0];
   for (const a of state.activities) if (a.date >= since(28)) a.zones.forEach((s, i) => (z[i] += s / 60));

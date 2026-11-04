@@ -1,6 +1,6 @@
 /* Tokens from design-system/garmin-companion/MASTER.md (Data-Dense Dashboard), plus a dark theme. */
 :root {
-  --bg: #f8fafc; --card: #ffffff; --fg: #1e3a8a; --text: #1e293b; --mfg: #475569; --border: #dbeafe; --muted: #e9eef6;
+  --bg: #f8fafc; --card: #ffffff; --fg: #1e3a8a; --text: #1e293b; --mfg: #475569; --border: #dbeafe; --field: #7a8ba3; --muted: #e9eef6;
   --primary: #1e40af; --on-primary: #ffffff; --accent-text: #b45309; --ring: #1e40af; --err: #dc2626;
   --s1: #2563eb; --s2: #d97706;
   --sl-deep: #3730a3; --sl-rem: #a21caf; --sl-light: #0284c7; --sl-awake: #64748b;
@@ -11,7 +11,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b1220; --card: #111a2e; --fg: #e2e8f0; --text: #e2e8f0; --mfg: #9fb0c8; --border: #22304f; --muted: #1a2540;
+    --bg: #0b1220; --card: #111a2e; --fg: #e2e8f0; --text: #e2e8f0; --mfg: #9fb0c8; --border: #22304f; --field: #5f7396; --muted: #1a2540;
     --primary: #60a5fa; --on-primary: #0b1220; --accent-text: #fbbf24; --ring: #93c5fd; --err: #f87171;
     --s1: #60a5fa; --s2: #fbbf24;
     --sl-deep: #818cf8; --sl-rem: #e879f9; --sl-light: #7dd3fc; --sl-awake: #94a3b8;
@@ -36,7 +36,8 @@ main:focus { outline: none; }
 .meta { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); }
 .top .range { margin-left: auto; display: flex; align-items: center; gap: var(--sp-2); color: var(--mfg); font-size: 0.875rem; }
 .badge { background: var(--muted); color: var(--fg); border: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; padding: 2px var(--sp-2); border-radius: 999px; }
-select, input { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 8px; min-height: 44px; padding: 0 var(--sp-3); }
+/* --field, not --border: a form control's edge is its only visual cue, so it needs 3:1 against what surrounds it. */
+select, input { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--field); border-radius: 8px; min-height: 44px; padding: 0 var(--sp-3); }
 
 .tabs { display: flex; gap: var(--sp-1); max-width: 1280px; margin: 0 auto; padding: 0 var(--sp-4); border-bottom: 1px solid var(--border); overflow-x: auto; }
 .tabs button { font: 500 1rem var(--sans); color: var(--mfg); background: none; border: 0; border-bottom: 3px solid transparent; min-height: 44px; padding: 0 var(--sp-4); cursor: pointer; transition: color 0.15s; }
@@ -62,7 +63,7 @@ figcaption, .cap { font-size: 0.875rem; font-weight: 600; color: var(--mfg); mar
 table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 th, td { text-align: left; padding: var(--sp-2) var(--sp-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
 th { color: var(--mfg); font-weight: 600; } .num { text-align: right; font-family: var(--mono); }
-tbody tr:hover { background: var(--muted); }
+@media (hover: hover) { tbody tr:hover { background: var(--muted); } } /* on touch, :hover sticks after a tap */
 
 .insight .r { font: 600 1.25rem var(--mono); color: var(--primary); }
 .insight p { margin: var(--sp-1) 0 0; }
