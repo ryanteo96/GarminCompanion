@@ -32,4 +32,3 @@ Garmin Connect Web > Personal API Key > Create Key. The key is shown once and ex
 - `lib/garmin.js`: token exchange, date-window chunking, field mapping
 - `lib/sample.js`: demo data
 - `public/`: page, styles, Chart.js (vendored), `stats.js` (readiness, load ratio, correlations)
-- `design-system/`: generated design tokens (Data-Dense Dashboard)
