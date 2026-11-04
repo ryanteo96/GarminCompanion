@@ -1,4 +1,5 @@
 import { friendly } from './errors.js';
+import { ago } from './time.js';
 import { band, explain, insights, loadSeries, mean, ratioLabel, readiness, rolling, weekDeltas, weekly, withLoad } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
@@ -137,7 +138,9 @@ function draw(id, type, labels, datasets, { stacked = false, summary, horizontal
   }
   el.setAttribute('aria-label', summary ?? '');
   const mfg = css('--mfg');
-  const axis = { ticks: { color: mfg, maxTicksLimit: 8, maxRotation: 0 }, stacked };
+  // About one label per 72px keeps date labels from running together on a phone.
+  const maxTicks = Math.max(3, Math.min(8, Math.floor((host.clientWidth || 360) / 72)));
+  const axis = { ticks: { color: mfg, maxTicksLimit: horizontal ? 8 : maxTicks, maxRotation: 0, autoSkipPadding: 12 }, stacked };
   charts[id] = new Chart(el, {
     type,
     data: { labels, datasets },
@@ -278,9 +281,23 @@ function training() {
   const names = ['Z1 Warm-up', 'Z2 Easy', 'Z3 Aerobic', 'Z4 Threshold', 'Z5 Maximum'];
   draw('c-zones', 'bar', names, [bar('Minutes', z.map((m) => Math.round(m)), ['--z1', '--z2', '--z3', '--z4', '--z5'].map(css))], { horizontal: true, summary: `Minutes per heart-rate zone: ${names.map((n, i) => `${n} ${Math.round(z[i])}`).join(', ')}.` });
 
+  const recent = [...state.activities].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 10);
+  $('acts-list').replaceChildren(
+    ...recent.map((a) => {
+      const li = document.createElement('li');
+      const top = document.createElement('div');
+      top.className = 'a-top';
+      top.append(Object.assign(text(document.createElement('span'), a.name || a.type.replaceAll('_', ' ')), { className: 'a-name' }), Object.assign(text(document.createElement('span'), fmtDate(a.date)), { className: 'a-date' }));
+      const meta = [a.type.replaceAll('_', ' '), a.minutes != null && `${num(a.minutes)} min`, a.km != null && `${num(a.km, 1)} km`, a.avgHr != null && `${num(a.avgHr)} bpm`, a.load != null && `load ${num(a.load)}`].filter(Boolean);
+      const facts = Object.assign(document.createElement('div'), { className: 'a-meta' });
+      facts.append(...meta.map((f) => text(document.createElement('span'), f)));
+      li.append(top, facts);
+      return li;
+    }),
+  );
   const body = $('acts').tBodies[0];
   body.replaceChildren(
-    ...[...state.activities].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 10).map((a) => {
+    ...recent.map((a) => {
       const tr = document.createElement('tr');
       [fmtDate(a.date), a.name, a.type.replaceAll('_', ' '), num(a.minutes), num(a.km, 1), num(a.avgHr), num(a.load)].forEach((v, i) => {
         const td = text(document.createElement('td'), v);
@@ -345,7 +362,21 @@ function render() {
   } catch (e) {
     notify(`Couldn't draw this view: ${e.message}`);
   }
+  scrollFocus();
 }
+
+// A scrolling region must be reachable by keyboard; one that fits is not a tab stop.
+function scrollFocus() {
+  document.querySelectorAll('.tablewrap').forEach((w) => (w.tabIndex = w.scrollWidth > w.clientWidth ? 0 : -1));
+}
+
+// Re-lay out when the width changes (rotation, window resize); height-only changes (mobile URL bar) are ignored.
+let lastW = innerWidth;
+let resizeTimer;
+addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (innerWidth !== lastW) { lastW = innerWidth; render(); } }, 250);
+});
 
 // ---------- tabs ----------
 function select(next, focus = false) {
@@ -390,6 +421,15 @@ const saveCache = (days, payload) => { try { localStorage.setItem(CACHE + days, 
 const loadCache = (days) => { try { return JSON.parse(localStorage.getItem(CACHE + days)); } catch { return null; } };
 const wipeCache = () => { try { Object.keys(localStorage).filter((k) => k.startsWith(CACHE)).forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ } };
 
+let fresh = null;
+function showFresh() {
+  if (!fresh) return;
+  const u = $('updated');
+  text(u, `${fresh.label} ${ago(fresh.ts)}`);
+  u.title = new Date(fresh.ts).toLocaleString();
+}
+setInterval(showFresh, 60000);
+
 let inflight = null;
 async function fetchData(days) {
   inflight?.abort();
@@ -419,7 +459,8 @@ function apply(j, stale) {
     notify(skipped ? `${skipped} Garmin records had no date and were left out.` : '');
   }
   $('demo').hidden = !j.demo;
-  text($('updated'), stale ? `Last synced ${new Date(stale.savedAt).toLocaleString()}` : `Updated ${new Date(j.fetchedAt).toLocaleString()}`);
+  fresh = stale ? { ts: stale.savedAt, label: 'Last synced' } : { ts: Date.parse(j.fetchedAt), label: 'Updated' };
+  showFresh();
   select(tab);
 }
 

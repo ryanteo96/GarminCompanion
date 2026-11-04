@@ -5,6 +5,7 @@ import { authed, mintCookie, same } from '../lib/auth.js';
 import { addDays, clock, normalize, parseToken, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
 import { friendly } from '../public/errors.js';
+import { ago } from '../public/time.js';
 import { band, corr, explain, insights, loadSeries, readiness, rolling, weekStart, withLoad } from '../public/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
@@ -135,4 +136,13 @@ test('rolling mean and normal-range band', () => {
   assert.equal(b[5], null, 'needs 7 readings');
   assert.ok(b[9].lo < 51 && b[9].hi > 51 && b[9].hi - b[9].lo < 3);
   assert.equal(band([null, 1, 2])[2], null);
+});
+
+test('ago gives a relative freshness label', () => {
+  const now = Date.UTC(2026, 10, 4, 12, 0, 0);
+  assert.equal(ago(now - 20e3, now), 'just now');
+  assert.equal(ago(now - 12 * 60e3, now), '12 min ago');
+  assert.equal(ago(now - 3 * 3600e3, now), '3 h ago');
+  assert.equal(ago(now + 5e3, now), 'just now', 'clock skew must not go negative');
+  assert.match(ago(now - 3 * 86400e3, now), /\w/);
 });

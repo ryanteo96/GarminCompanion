@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <meta name="robots" content="noindex">
   <title>Garmin Companion</title>
@@ -43,10 +43,12 @@
   <div id="app" hidden>
     <header class="top">
       <h1>Garmin Companion</h1>
-      <span id="demo" class="badge" hidden>Demo data</span>
-      <span id="updated" class="muted small"></span>
-      <label class="range">Range
-        <select id="range">
+      <div class="meta">
+        <span id="demo" class="badge" hidden>Demo data</span>
+        <span id="updated" class="muted small"></span>
+      </div>
+      <label class="range"><span class="lbl">Range</span>
+        <select id="range" title="Applies to the charts and trends; the cards use fixed 7-day windows">
           <option value="30">30 days</option>
           <option value="90" selected>90 days</option>
           <option value="180">180 days</option>
@@ -114,7 +116,8 @@
           <figure class="card"><figcaption>Time in heart-rate zones, last 28 days (minutes)</figcaption><div class="cv"><canvas id="c-zones" role="img"></canvas></div></figure>
           <div class="card wide">
             <h2 class="cap">Recent activities</h2>
-            <div class="tablewrap"><table id="acts"><thead><tr><th>Date</th><th>Name</th><th>Type</th><th class="num">Min</th><th class="num">km</th><th class="num">Avg HR</th><th class="num">Load</th></tr></thead><tbody></tbody></table></div>
+            <div class="tablewrap" id="acts-wrap" role="region" aria-label="Recent activities table" tabindex="-1"><table id="acts"><thead><tr><th>Date</th><th>Name</th><th>Type</th><th class="num">Min</th><th class="num">km</th><th class="num">Avg HR</th><th class="num">Load</th></tr></thead><tbody></tbody></table></div>
+            <ul id="acts-list" class="acts-list" aria-label="Recent activities"></ul>
           </div>
         </div>
       </section>
@@ -131,7 +134,7 @@
       <section id="p-insights" role="tabpanel" aria-labelledby="t-insights" hidden>
         <div class="card">
           <h2 class="cap">Last 7 days vs the 21 days before</h2>
-          <div class="tablewrap"><table id="deltas"><thead><tr><th>Metric</th><th class="num">Last 7 days</th><th class="num">Before</th><th class="num">Change</th></tr></thead><tbody></tbody></table></div>
+          <div class="tablewrap" role="region" aria-label="Weekly changes table" tabindex="-1"><table id="deltas"><thead><tr><th>Metric</th><th class="num">Last 7 days</th><th class="num">Before</th><th class="num">Change</th></tr></thead><tbody></tbody></table></div>
         </div>
         <h2 class="cap pad">What moves together in your data</h2>
         <div id="insights" class="grid"></div>
