@@ -1,6 +1,6 @@
 import { friendly } from './errors.js';
 import { ago } from './time.js';
-import { band, explain, insights, isPartialWeek, loadSeries, mean, ratioLabel, readiness, rolling, verdict, verdictTone, weekDeltas, weekly, withLoad } from './stats.js';
+import { band, explain, insights, isPartialWeek, loadSeries, loadSummary, mean, ratioLabel, ratioPos, readiness, rolling, verdict, verdictTone, weekDeltas, weekly, withLoad } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
@@ -298,16 +298,46 @@ function weekBars(w, d, color) {
   };
 }
 
+// One two-line session row, shared by the Training hero and the phone activity list.
+function sessionItem(a) {
+  const li = document.createElement('li');
+  const top = document.createElement('div');
+  top.className = 'a-top';
+  top.append(Object.assign(text(document.createElement('span'), a.name || a.type.replaceAll('_', ' ')), { className: 'a-name' }), Object.assign(text(document.createElement('span'), fmtDate(a.date)), { className: 'a-date' }));
+  const meta = [a.type.replaceAll('_', ' '), a.minutes != null && `${num(a.minutes)} min`, a.km != null && `${num(a.km, 1)} km`, a.avgHr != null && `${num(a.avgHr)} bpm`, a.load != null && `load ${num(a.load)}`].filter(Boolean);
+  const facts = Object.assign(document.createElement('div'), { className: 'a-meta' });
+  facts.append(...meta.map((f) => text(document.createElement('span'), f)));
+  li.append(top, facts);
+  return li;
+}
+const newestFirst = (a, b) => b.date.localeCompare(a.date) || b.id - a.id;
+
+function loadHero(last, since) {
+  const el = $('load');
+  const s = loadSummary(last);
+  el.dataset.state = el.dataset.tone = s.tone;
+  text($('load-h'), s.head);
+  text($('load-detail'), s.detail);
+  $('load-score').hidden = last.ratio == null;
+  if (last.ratio != null) {
+    text($('load-n'), last.ratio.toFixed(2));
+    text($('load-state'), ratioLabel(last.ratio));
+    const scale = $('load-scale');
+    scale.setAttribute('aria-label', `Load ratio ${last.ratio.toFixed(2)}, ${ratioLabel(last.ratio).toLowerCase()}. Zones: under 0.8 lighter than usual, 0.8 to 1.3 sweet spot, 1.3 to 1.5 ramping up, above 1.5 spiking.`);
+    $('load-marker').style.left = `${ratioPos(last.ratio)}%`;
+    scale.querySelectorAll('.tick').forEach((t) => (t.style.left = `${t.dataset.pos}%`));
+  }
+  const week = state.activities.filter((a) => a.date >= since(7));
+  const hours = week.reduce((t, a) => t + (a.minutes ?? 0), 0) / 60;
+  const three = [...state.activities].sort(newestFirst).slice(0, 3);
+  text($('sessions-h'), three.length ? `Your last ${three.length} session${three.length === 1 ? '' : 's'}: ${week.length ? `${week.length} in the last 7 days, ${num(hours, 1)} h` : 'none in the last 7 days'}` : 'No sessions recorded in this range');
+  $('sessions').replaceChildren(...three.map(sessionItem));
+}
+
 function training() {
   const d = state.days, ls = loadSeries(d), last = ls.at(-1);
   const since = (n) => d.at(-n)?.date ?? '0000';
-  const wk = state.activities.filter((a) => a.date >= since(7));
-  kpis('k-training', [
-    ['7-day load', num(last.acute), 'sum of activity training load'],
-    ['Usual weekly load', num(last.chronic), '28-day average per week'],
-    ['Load ratio', last.ratio == null ? '—' : last.ratio.toFixed(2), '7-day ÷ usual week', ratioLabel(last.ratio)],
-    ['Sessions, 7 days', String(wk.length), `${num(wk.reduce((s, a) => s + (a.minutes ?? 0), 0) / 60, 1)} h total`],
-  ]);
+  loadHero(last, since);
   const s1 = css('--s1'), s2 = css('--s2');
   const w = weekly(d, 'load');
   const wk_ = weekBars(w, d, s1);
@@ -320,20 +350,8 @@ function training() {
   const names = ['Z1 Warm-up', 'Z2 Easy', 'Z3 Aerobic', 'Z4 Threshold', 'Z5 Maximum'];
   draw('c-zones', 'bar', names, [bar('Minutes', z.map((m) => Math.round(m)), ['--z1', '--z2', '--z3', '--z4', '--z5'].map(css))], { horizontal: true, summary: `Minutes per heart-rate zone: ${names.map((n, i) => `${n} ${Math.round(z[i])}`).join(', ')}.` });
 
-  const recent = [...state.activities].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 10);
-  $('acts-list').replaceChildren(
-    ...recent.map((a) => {
-      const li = document.createElement('li');
-      const top = document.createElement('div');
-      top.className = 'a-top';
-      top.append(Object.assign(text(document.createElement('span'), a.name || a.type.replaceAll('_', ' ')), { className: 'a-name' }), Object.assign(text(document.createElement('span'), fmtDate(a.date)), { className: 'a-date' }));
-      const meta = [a.type.replaceAll('_', ' '), a.minutes != null && `${num(a.minutes)} min`, a.km != null && `${num(a.km, 1)} km`, a.avgHr != null && `${num(a.avgHr)} bpm`, a.load != null && `load ${num(a.load)}`].filter(Boolean);
-      const facts = Object.assign(document.createElement('div'), { className: 'a-meta' });
-      facts.append(...meta.map((f) => text(document.createElement('span'), f)));
-      li.append(top, facts);
-      return li;
-    }),
-  );
+  const recent = [...state.activities].sort(newestFirst).slice(0, 10);
+  $('acts-list').replaceChildren(...recent.map(sessionItem));
   const body = $('acts').tBodies[0];
   body.replaceChildren(
     ...recent.map((a) => {

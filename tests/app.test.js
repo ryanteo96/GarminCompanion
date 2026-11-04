@@ -8,7 +8,7 @@ import data from '../api/data.js';
 import logout from '../api/logout.js';
 import { friendly } from '../public/errors.js';
 import { ago } from '../public/time.js';
-import { band, corr, explain, isPartialWeek, loadBand, insights, loadSeries, readiness, rolling, verdict, verdictTone, weekDeltas, weekStart, withLoad } from '../public/stats.js';
+import { band, corr, explain, isPartialWeek, loadBand, loadSummary, loadZone, ratioLabel, ratioPos, insights, loadSeries, readiness, rolling, verdict, verdictTone, weekDeltas, weekStart, withLoad } from '../public/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
 
@@ -260,4 +260,30 @@ test('verdict colour follows the advice: a spiking load cannot be green', () => 
   assert.equal(verdictTone({ state: 'strained' }, 2), 'strained', 'already the most cautious tone, never softened');
   assert.equal(verdictTone({ state: 'strained' }, 0.5), 'strained', 'a light load does not soften a strained day');
   assert.equal(verdictTone({ state: 'well' }, null), 'well');
+});
+
+test('load zones: one set of cut-offs behind the label, the verdict and the Training hero', () => {
+  assert.equal(loadZone(null), null);
+  assert.deepEqual([0.79, 0.8, 1.3, 1.31, 1.5, 1.51].map(loadZone), ['light', 'sweet', 'sweet', 'ramping', 'ramping', 'spiking']);
+  assert.deepEqual([0.5, 1, 1.4, 2].map(ratioLabel), ['Lighter than usual', 'In your sweet spot', 'Ramping up', 'Spiking']);
+  assert.equal(ratioLabel(null), 'Not enough history');
+  assert.deepEqual([0.5, 1, 1.4, 2].map(loadBand), ['light', 'ok', 'ok', 'spiking']);
+});
+
+test('loadSummary: sentence first, numbers in prose, tone matches the zone', () => {
+  const a = loadSummary({ acute: 312, chronic: 407.4, ratio: 0.77 });
+  assert.equal(a.head, 'Your load is lighter than usual');
+  assert.equal(a.tone, 'typical');
+  assert.match(a.detail, /^312 over the last 7 days, against 407 in a usual week \(your 28-day average\)\./);
+  const t = (ratio) => loadSummary({ acute: 100, chronic: 100, ratio }).tone;
+  assert.deepEqual([0.5, 1, 1.4, 1.9].map(t), ['typical', 'well', 'below', 'strained']);
+  const none = loadSummary({ acute: 2345, chronic: null, ratio: null });
+  assert.equal(none.head, 'Not enough history yet');
+  assert.equal(none.tone, '');
+  assert.match(none.detail, /^2,345 load over the last 7 days\. The ratio needs 28 days/);
+  assert.deepEqual([-1, 0, 1, 2, 5].map(ratioPos), [0, 0, 50, 100, 100], 'the marker clamps to the 0 to 2 scale');
+  const empty = loadSummary({ acute: 0, chronic: 0, ratio: null });
+  assert.equal(empty.head, 'No training recorded in the last 28 days', 'zero load is not "missing history"');
+  assert.doesNotMatch(empty.detail, /28 days of history/);
+  assert.equal(empty.tone, '');
 });

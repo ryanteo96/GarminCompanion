@@ -113,7 +113,28 @@
       </section>
 
       <section id="p-training" role="tabpanel" aria-labelledby="t-training" hidden>
-        <div class="kpis" id="k-training"></div>
+        <section id="load" class="card today" aria-labelledby="load-h">
+          <div class="today-main">
+            <h2 id="load-h" class="verdict"></h2>
+            <p id="load-detail" class="detail"></p>
+          </div>
+          <div class="today-score" id="load-score">
+            <p class="score"><span id="load-n" class="score-n"></span><span class="muted"> ratio</span> <span id="load-state" class="state"></span></p>
+            <div class="scale load" id="load-scale" role="img">
+              <span class="zones"><i></i><i></i><i></i><i></i></span>
+              <span class="marker" id="load-marker"></span>
+              <span class="tick" data-pos="40">0.8</span><span class="tick" data-pos="65">1.3</span><span class="tick" data-pos="75">1.5</span>
+            </div>
+          </div>
+          <div class="sessions-wrap">
+            <h3 id="sessions-h" class="cap"></h3>
+            <ul id="sessions" class="sessions" aria-labelledby="sessions-h"></ul>
+          </div>
+          <details class="how">
+            <summary>What is training load?</summary>
+            <p>Training load is the score Garmin gives each activity for how demanding it was, added up over a week. The ratio divides your last 7 days by your usual week (your 28-day total divided by 4). Under 0.8 is lighter than usual, up to 1.3 your sweet spot, up to 1.5 ramping up, and above that spiking. It describes your own recent pattern, not a limit, and it is not medical advice.</p>
+          </details>
+        </section>
         <div class="grid">
           <figure class="card"><figcaption id="cap-wload">Weekly training load</figcaption><div class="cv"><canvas id="c-wload" role="img"></canvas></div></figure>
           <figure class="card"><figcaption>Acute (7-day) vs chronic (28-day weekly average) load</figcaption><div class="cv"><canvas id="c-ac" role="img"></canvas></div></figure>

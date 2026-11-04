@@ -188,3 +188,13 @@ table, .kpi .value, .score-n { font-variant-numeric: tabular-nums; }
 .refresh { font: 500 0.875rem var(--sans); color: var(--primary); background: none; border: 0; padding: 0 var(--sp-2); min-height: 44px; margin-block: -10px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .refresh:hover { color: var(--fg); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---- Training hero: the Recovery hero's card, scale and tone, with load-ratio zones on a 0 to 2 scale ---- */
+.scale.load .zones i:nth-child(1) { width: 40%; background: color-mix(in srgb, var(--st-typical) 40%, transparent); }
+.scale.load .zones i:nth-child(2) { width: 25%; background: color-mix(in srgb, var(--st-well) 40%, transparent); }
+.scale.load .zones i:nth-child(3) { width: 10%; background: color-mix(in srgb, var(--st-below) 40%, transparent); }
+.scale.load .zones i:nth-child(4) { width: 25%; background: color-mix(in srgb, var(--st-strained) 40%, transparent); }
+.sessions-wrap { grid-column: 1 / -1; padding-top: var(--sp-3); border-top: 1px solid var(--border); }
+.sessions-wrap .cap { margin-bottom: var(--sp-1); }
+.sessions { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 0 var(--sp-5); }
+.sessions li { padding: var(--sp-2) 0; }

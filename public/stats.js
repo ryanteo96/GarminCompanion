@@ -67,9 +67,10 @@ export function readiness(days) {
   return { score, label, state, date: days[i].date, parts };
 }
 
-// Load-ratio cut-offs, shared by the label and the verdict so they cannot drift apart.
+// Load-ratio zones: one source for the label, the Recovery verdict and the Training hero, so they cannot drift apart.
 const LIGHT = 0.8, SWEET = 1.3, SPIKE = 1.5;
-export const loadBand = (ratio) => (ratio == null ? 'ok' : ratio < LIGHT ? 'light' : ratio > SPIKE ? 'spiking' : 'ok');
+export const loadZone = (r) => (r == null ? null : r < LIGHT ? 'light' : r <= SWEET ? 'sweet' : r <= SPIKE ? 'ramping' : 'spiking');
+export const loadBand = (r) => { const z = loadZone(r); return z === 'light' || z === 'spiking' ? z : 'ok'; };
 
 // The headline answers "hard or easy today?" from recovery AND load, so a spiking load can't sit
 // under a "good day" and a light load explains a low-recovery day instead of seeming to contradict it.
@@ -112,8 +113,25 @@ export function loadSeries(days) {
   });
 }
 
-export const ratioLabel = (r) =>
-  r == null ? 'Not enough history' : r < LIGHT ? 'Lighter than usual' : r <= SWEET ? 'In your sweet spot' : r <= SPIKE ? 'Ramping up' : 'Spiking';
+export const ratioLabel = (r) => ({ light: 'Lighter than usual', sweet: 'In your sweet spot', ramping: 'Ramping up', spiking: 'Spiking' })[loadZone(r)] ?? 'Not enough history';
+
+// The Training hero: a sentence first, the numbers in prose, and a tone (the same colour mechanism as the Recovery hero).
+const LOAD = {
+  light: ['Your load is lighter than usual', 'typical', 'There is room to add training if you feel good.'],
+  sweet: ['Your load is in your sweet spot', 'well', 'That is close to what your body is used to.'],
+  ramping: ['Your load is ramping up', 'below', 'A bigger jump than usual: watch how you recover.'],
+  spiking: ['Your load is spiking', 'strained', 'A big jump from your usual week: give yourself extra recovery.'],
+};
+const n0 = (x) => Math.round(x).toLocaleString();
+export function loadSummary({ acute, chronic, ratio }) {
+  const zone = loadZone(ratio);
+  // No ratio because the usual week is empty (not because history is missing): say what is true.
+  if (chronic === 0) return { zone, tone: '', head: 'No training recorded in the last 28 days', detail: 'Once you record activities, this compares your last week with your usual week.' };
+  if (!zone) return { zone, tone: '', head: 'Not enough history yet', detail: `${n0(acute)} load over the last 7 days. The ratio needs 28 days of history to compare your last week with your usual week.` };
+  const [head, tone, advice] = LOAD[zone];
+  return { zone, tone, head, detail: `${n0(acute)} over the last 7 days, against ${n0(chronic)} in a usual week (your 28-day average). ${advice}` };
+}
+export const ratioPos = (ratio) => (Math.min(Math.max(ratio, 0), 2) / 2) * 100; // position on the 0 to 2 scale, in percent
 
 // Trailing mean over the last `win` values; null until `min` readings exist.
 export function rolling(values, win = 7, min = 3) {
