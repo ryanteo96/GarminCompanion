@@ -44,6 +44,8 @@ It judges today's recovery against the owner's own previous 28 days (HRV, restin
 - The name is "Garmin Companion".
 - No Garmin logos or brand assets are used; it is a personal tool, not an official Garmin product.
 - Voice today: plain, specific, second person, no hype, no gamification. A bad recovery day is information, not a failure.
+- Design language (user confirmed in the redesign round): the category standard, played straight: a dark card-and-sidebar dashboard in system type, with no irony or quirk. Two things are borrowed by the user's explicit choice: the readiness presentation from the "Survey Sheet" sketch (a poster-size numeral with "of 100" and the zoned 0 to 100 scale beneath it) and the colour contrast of the "Midnight Transit Diagram" sketch (a deep midnight-navy ground with vivid, saturated per-signal inks).
+- Craft bar (user confirmed): it should sit alongside Garmin Connect and Apple Health.
 
 ## Evidence on Hand
 

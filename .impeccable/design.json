@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T00:00:00Z",
+  "title": "Design System: Garmin Companion",
+  "extensions": {
+    "colorMeta": {
+      "ground": { "role": "neutral", "displayName": "Midnight Enamel", "canonical": "#0a1226", "light": "#e9eff8", "tonalRamp": ["#0a1226", "#111b38", "#18254d", "#25335e", "#46547a", "#6379a8", "#a9b6d0", "#e8eef7"] },
+      "sidebar": { "role": "neutral", "displayName": "Deep Harbour", "canonical": "#0d1730", "light": "#f5f8fc" },
+      "panel": { "role": "neutral", "displayName": "Panel Navy", "canonical": "#111b38", "light": "#ffffff" },
+      "panel-raised": { "role": "neutral", "displayName": "Raised Navy", "canonical": "#18254d", "light": "#eef2fa" },
+      "hairline": { "role": "neutral", "displayName": "Hairline Navy", "canonical": "#25335e", "light": "#d0daec" },
+      "field-stroke": { "role": "neutral", "displayName": "Control Stroke", "canonical": "#6379a8", "light": "#6a7da3" },
+      "porcelain": { "role": "neutral", "displayName": "Porcelain", "canonical": "#e8eef7", "light": "#0e1a38" },
+      "muted-slate": { "role": "neutral", "displayName": "Muted Slate", "canonical": "#a9b6d0", "light": "#46547a" },
+      "primary": { "role": "primary", "displayName": "Daylight Azure", "canonical": "#7db0ff", "light": "#1f4fd8", "tonalRamp": ["#07122c", "#12306e", "#1f4fd8", "#4d7fee", "#7db0ff", "#a9ccff", "#d2e3ff", "#eef5ff"] },
+      "on-primary": { "role": "neutral", "displayName": "On Primary", "canonical": "#07122c", "light": "#ffffff" },
+      "focus-ring": { "role": "neutral", "displayName": "Focus Ring", "canonical": "#a9ccff", "light": "#1f4fd8" },
+      "error": { "role": "neutral", "displayName": "Error Coral", "canonical": "#ff8a8a", "light": "#c52a2a" },
+      "ink-hrv": { "role": "tertiary", "displayName": "HRV Scarlet", "canonical": "#ff5a64", "light": "#d3303c" },
+      "ink-rhr": { "role": "tertiary", "displayName": "Resting HR Azure", "canonical": "#5b9bff", "light": "#2457e0" },
+      "ink-sleep": { "role": "tertiary", "displayName": "Sleep Amber", "canonical": "#ffb224", "light": "#a85f00" },
+      "ink-body-battery": { "role": "tertiary", "displayName": "Body Battery Green", "canonical": "#35d07f", "light": "#14804a" },
+      "ink-load": { "role": "tertiary", "displayName": "Load Orange", "canonical": "#ff8a3d", "light": "#c4501a" },
+      "ink-steps": { "role": "tertiary", "displayName": "Steps Teal", "canonical": "#36d6c8", "light": "#0b8a82" },
+      "ink-intensity": { "role": "tertiary", "displayName": "Intensity Violet", "canonical": "#b794ff", "light": "#6b44d0" },
+      "ink-stress": { "role": "tertiary", "displayName": "Stress Slate", "canonical": "#c3cde0", "light": "#46547a" },
+      "ink-calories": { "role": "tertiary", "displayName": "Calories Pink", "canonical": "#ff7ad9", "light": "#b3239a" },
+      "state-strained": { "role": "state", "displayName": "Strained", "canonical": "#ff6b6b", "light": "#c52a2a" },
+      "state-below": { "role": "state", "displayName": "Below Usual", "canonical": "#ffa04d", "light": "#ad4a00" },
+      "state-typical": { "role": "state", "displayName": "Typical", "canonical": "#8fb8ff", "light": "#1f4fd8" },
+      "state-well": { "role": "state", "displayName": "Well", "canonical": "#4fdc8e", "light": "#13793c" },
+      "sleep-deep": { "role": "sleep", "displayName": "Deep", "canonical": "#b86a00", "light": "#4d2a00" },
+      "sleep-rem": { "role": "sleep", "displayName": "REM", "canonical": "#ffb224", "light": "#a35c00" },
+      "sleep-light": { "role": "sleep", "displayName": "Light", "canonical": "#ffd98a", "light": "#bf8512" },
+      "sleep-awake": { "role": "sleep", "displayName": "Awake", "canonical": "#7f8db0", "light": "#6f7da0" },
+      "zone-1": { "role": "zone", "displayName": "Zone 1", "canonical": "#ffe0c2", "light": "#d0722e" },
+      "zone-2": { "role": "zone", "displayName": "Zone 2", "canonical": "#ffc08a", "light": "#bd5f1c" },
+      "zone-3": { "role": "zone", "displayName": "Zone 3", "canonical": "#ffa05a", "light": "#a64e10" },
+      "zone-4": { "role": "zone", "displayName": "Zone 4", "canonical": "#ff8a3d", "light": "#8c3d07" },
+      "zone-5": { "role": "zone", "displayName": "Zone 5", "canonical": "#e8651a", "light": "#6e2c00" }
+    },
+    "typographyMeta": {
+      "poster": { "displayName": "Poster numeral", "purpose": "Readiness score only; tabular; 5.5rem on phone." },
+      "display": { "displayName": "Display", "purpose": "Verdict line and metric values." },
+      "headline": { "displayName": "Headline", "purpose": "Area title, gate heading, insight figures." },
+      "title": { "displayName": "Title", "purpose": "Brand name." },
+      "body": { "displayName": "Body", "purpose": "Default text; detail copy 1.0625rem capped at 60ch." },
+      "label": { "displayName": "Label", "purpose": "Card captions, metric heads, table headers." },
+      "readout": { "displayName": "Readout", "purpose": "Ticks, zone labels, pills, subtext, phone tab labels." }
+    },
+    "shadows": [
+      { "name": "marker-halo", "value": "0 0 0 2px var(--panel)", "purpose": "Zero-offset cut-out around the scale marker; not elevation. No other shadows exist." }
+    ],
+    "motion": [
+      { "name": "hover-transition", "value": "150ms (background, color)", "purpose": "Sidebar and bottom tabs." },
+      { "name": "chart-draw", "value": "300ms", "purpose": "Chart.js entrance; off under reduced motion." },
+      { "name": "skeleton-pulse", "value": "1.4s ease-in-out infinite, opacity to 0.55", "purpose": "Loading placeholders; off under reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "1060px" },
+      { "name": "insight-two-up", "value": "min-width 820px" },
+      { "name": "phone", "value": "819px" },
+      { "name": "small-phone", "value": "560px" },
+      { "name": "tiny", "value": "380px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "The one filled action.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Refresh</button>",
+      "css": ".ds-btn { font: 600 1rem system-ui, sans-serif; min-height: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer; border: 1px solid var(--field, #6379a8); color: var(--text, #e8eef7); background: transparent; } .ds-btn:hover { border-color: var(--primary, #7db0ff); } .ds-btn:focus-visible { outline: 2px solid var(--ring, #a9ccff); outline-offset: 2px; } .ds-btn-primary { color: var(--on-primary, #07122c); background: var(--primary, #7db0ff); border-color: var(--primary, #7db0ff); } .ds-btn-primary:hover { background: color-mix(in srgb, var(--primary, #7db0ff) 86%, var(--text, #e8eef7)); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Default outlined action.",
+      "html": "<button class=\"ds-btn-2\">Sign out</button>",
+      "css": ".ds-btn-2 { font: 600 1rem system-ui, sans-serif; min-height: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer; border: 1px solid var(--field, #6379a8); color: var(--text, #e8eef7); background: transparent; } .ds-btn-2:hover { border-color: var(--primary, #7db0ff); } .ds-btn-2:focus-visible { outline: 2px solid var(--ring, #a9ccff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Select Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Standard select and password input.",
+      "html": "<select class=\"ds-select\"><option>90 days</option></select>",
+      "css": ".ds-select { font: inherit; color: var(--text, #e8eef7); background: var(--panel, #111b38); border: 1px solid var(--field, #6379a8); border-radius: 10px; min-height: 44px; padding: 0 12px; } .ds-select:focus-visible { outline: 2px solid var(--ring, #a9ccff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Sidebar Tab",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Navigation item; selected state lifts to the raised fill.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab\" aria-selected=\"true\">Recovery</button><button class=\"ds-tab\" aria-selected=\"false\">Training</button></div>",
+      "css": ".ds-tabs { display: flex; flex-direction: column; gap: 4px; width: 208px; } .ds-tab { display: flex; align-items: center; min-height: 44px; padding: 0 12px; font: 500 1rem system-ui, sans-serif; color: var(--mfg, #a9b6d0); background: none; border: 0; border-radius: 10px; cursor: pointer; text-align: left; transition: background .15s, color .15s; } .ds-tab:hover { color: var(--text, #e8eef7); background: var(--panel-2, #18254d); } .ds-tab[aria-selected=true] { color: var(--text, #e8eef7); background: var(--panel-2, #18254d); font-weight: 600; } .ds-tab:focus-visible { outline: 2px solid var(--ring, #a9ccff); outline-offset: -2px; }"
+    },
+    {
+      "name": "Metric Card",
+      "kind": "card",
+      "refersTo": "metric-card",
+      "description": "One signal: ink dot, delta pill, value, usual, 14-day line.",
+      "html": "<div class=\"ds-metric\"><div class=\"ds-mhead\"><span class=\"ds-dot\"></span><span>HRV</span><span class=\"ds-pill\">+4 ms</span></div><div class=\"ds-mval\">58 <span class=\"ds-unit\">ms</span></div><div class=\"ds-msub\">usual 54 ms</div><svg class=\"ds-spark\" viewBox=\"0 0 100 40\" preserveAspectRatio=\"none\"><path d=\"M0 28 L20 22 L40 26 L60 14 L80 18 L100 8\"/></svg></div>",
+      "css": ".ds-metric { --ink: var(--ink-hrv, #ff5a64); display: grid; gap: 4px; width: 260px; padding: 16px; background: var(--panel, #111b38); border: 1px solid var(--rule, #25335e); border-radius: 14px; color: var(--text, #e8eef7); font-family: system-ui, sans-serif; } .ds-mhead { display: flex; align-items: center; gap: 8px; font-size: .875rem; font-weight: 600; color: var(--mfg, #a9b6d0); } .ds-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink); } .ds-pill { margin-left: auto; padding: 1px 8px; font-size: .75rem; border: 1px solid var(--rule, #25335e); border-radius: 999px; } .ds-mval { font-size: 2.125rem; line-height: 1.3; font-weight: 700; font-variant-numeric: tabular-nums; } .ds-unit { font-size: .875rem; font-weight: 500; color: var(--mfg, #a9b6d0); } .ds-msub { font-size: .8125rem; color: var(--mfg, #a9b6d0); } .ds-spark { width: 100%; height: 40px; margin-top: 8px; overflow: visible; } .ds-spark path { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }"
+    },
+    {
+      "name": "Readiness Hero",
+      "kind": "custom",
+      "refersTo": "hero-panel",
+      "description": "Poster numeral and zoned scale on a tone-washed panel.",
+      "html": "<div class=\"ds-hero\"><div><div class=\"ds-score\"><span class=\"ds-n\">62</span><span class=\"ds-of\">of 100</span></div><div class=\"ds-state\">Typical</div><div class=\"ds-scale\"><div class=\"ds-zones\"><i></i><i></i><i></i><i></i></div><span class=\"ds-marker\"></span></div></div><div class=\"ds-verdict\">Train as planned.</div></div>",
+      "css": ".ds-hero { --tone: var(--st-typical, #8fb8ff); display: grid; grid-template-columns: 340px 1fr; gap: 16px 32px; padding: 32px; border: 1px solid var(--rule, #25335e); border-radius: 14px; background: color-mix(in srgb, var(--tone) 11%, var(--panel, #111b38)); color: var(--text, #e8eef7); font-family: system-ui, sans-serif; } .ds-score { display: flex; align-items: baseline; gap: 8px; } .ds-n { font-size: 7rem; line-height: 1.3; margin-block: -.14em; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; } .ds-of { color: var(--mfg, #a9b6d0); } .ds-state { font-size: 1.0625rem; font-weight: 600; color: var(--tone); } .ds-scale { position: relative; margin: 16px 0; height: 12px; } .ds-zones { display: flex; gap: 2px; height: 100%; border-radius: 6px; overflow: hidden; } .ds-zones i { display: block; height: 100%; } .ds-zones i:nth-child(1) { width: 30%; background: color-mix(in srgb, var(--st-strained, #ff6b6b) 80%, var(--panel, #111b38)); } .ds-zones i:nth-child(2) { width: 20%; background: color-mix(in srgb, var(--st-below, #ffa04d) 80%, var(--panel, #111b38)); } .ds-zones i:nth-child(3) { width: 20%; background: color-mix(in srgb, var(--st-typical, #8fb8ff) 80%, var(--panel, #111b38)); } .ds-zones i:nth-child(4) { width: 30%; background: color-mix(in srgb, var(--st-well, #4fdc8e) 80%, var(--panel, #111b38)); } .ds-marker { position: absolute; left: 62%; top: -6px; width: 4px; height: 24px; border-radius: 2px; background: var(--text, #e8eef7); transform: translateX(-50%); box-shadow: 0 0 0 2px var(--panel, #111b38); } .ds-verdict { align-self: center; font-size: 2.125rem; line-height: 1.3; font-weight: 700; letter-spacing: -.015em; color: var(--tone); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Instrument Panel",
+    "overview": "A phone in a dim room at 6:40am, or a laptop at a desk: the same calm, dense panel. A midnight-navy enamel ground carries deeper panels, porcelain text and hairline rules, and every Garmin or computed signal is given one vivid ink that it keeps on every surface. The category standard, played straight: sidebar and cards, system type, standard controls. Its one loud moment is the readiness numeral, set at poster size on a panel washed with the tone of the advice.\n\nDensity is deliberate: enough real data stays visible to justify the verdict. Depth is tonal, never decorative. Dark is the default theme; the light theme is composed separately (not an inversion) in a prefers-color-scheme: light block, so the hues of the inks are kept but each value is re-picked for contrast on white panels.",
+    "keyCharacteristics": [
+      "Navy ground, three tonal surface steps, hairline borders, no shadows.",
+      "One ink per signal, repeated in dot, value line, sparkline, bars and charts.",
+      "Poster tabular numeral against 12 to 14px readouts.",
+      "System UI type only; 44px controls; sidebar on laptop, bottom tab bar on phone.",
+      "Every number sits next to the owner's own \"usual\"."
+    ],
+    "rules": [
+      { "name": "The One Ink Rule", "body": "A signal has exactly one ink and uses it everywhere; an ink is never reused for another signal or for decoration.", "section": "colors" },
+      { "name": "The Tone Wash Rule", "body": "The advice tone washes the hero panel at 11% and colors the verdict text; no other panel is tinted.", "section": "colors" },
+      { "name": "The Contrast Floor Rule", "body": "Text meets 4.5:1 and inks and graphics 3:1 in both themes, verified from the tokens. New inks are checked in both before they ship.", "section": "colors" },
+      { "name": "The Tabular Rule", "body": "Every number that can change (score, metric values, tables, insight figures) is tabular.", "section": "typography" },
+      { "name": "The One Face Rule", "body": "System UI only. Chart.js is pointed at the same stack through Chart.defaults.font.family.", "section": "typography" },
+      { "name": "The Flat Rule", "body": "Surfaces never lift. State is shown by border color or a step up the tonal ladder, never a shadow or glow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do give every new signal one ink, declared as --ink-* in both themes, and route it through data-ink.",
+      "Do place each value beside the owner's \"usual\" and the delta from it.",
+      "Do use the six-step spacing scale and 10px/14px radii.",
+      "Do keep controls at 44px and keep focus visible (2px ring, 2px offset).",
+      "Do say what is computed here: the readiness score and load ratio are not Garmin metrics, and the UI states it.",
+      "Do compose a new color for light separately and check it at 4.5:1 (text) or 3:1 (ink, graphics)."
+    ],
+    "donts": [
+      "Don't replace the hero with a gauge ring plus equal-weight cards.",
+      "Don't add glows, gradients, drop shadows or blurred backdrops.",
+      "Don't use color as the only cue for state; pair it with a word, arrow or sign.",
+      "Don't introduce a second typeface or a non-tabular figure for changing numbers.",
+      "Don't reuse one signal's ink for another signal or for decoration.",
+      "Don't tint any panel other than the hero with the advice tone."
+    ]
+  }
+}

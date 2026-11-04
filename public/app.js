@@ -34,26 +34,83 @@ const text = (el, s) => ((el.textContent = s), el);
 // ---------- drawing helpers ----------
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Chart.js reads the font from its defaults; a per-chart options.font.family is ignored by this build.
-Chart.defaults.font.family = '"Fira Sans", system-ui, sans-serif';
-document.fonts?.ready.then(() => render()); // redraw once the web font is in, so canvas text never stays in the fallback
+Chart.defaults.font.family = css('--sans');
 
-function kpis(id, items) {
-  $(id).replaceChildren(
-    ...items.map((item) => {
-      if (item instanceof Element) return item;
-      const [label, value, sub, tag] = item;
-      const card = document.createElement('div');
-      card.className = 'card kpi';
-      for (const [cls, t] of [['label', label], ['value', value], ['sub', sub], ['tag', tag]]) {
-        if (!t) continue;
-        const div = Object.assign(document.createElement('div'), { className: cls });
-        if (Array.isArray(t)) div.append(t[0], Object.assign(text(document.createElement('span'), t[1]), { className: 'unit' }));
-        else text(div, t);
-        card.append(div);
-      }
-      return card;
-    }),
+const SVG = 'http://www.w3.org/2000/svg';
+const node = (tag, cls, content) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (content != null) n.textContent = content;
+  return n;
+};
+
+function el(ns, tag, attrs = {}) {
+  const n = document.createElementNS(ns, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  return n;
+}
+
+// The last 14 days as a line that scales to its own range, with your usual drawn dashed behind it. Gaps break the line.
+function spark([values, usual, label]) {
+  const seen = values.filter((v) => v != null);
+  if (seen.length < 2) return null;
+  const all = usual == null ? seen : [...seen, usual];
+  const lo = Math.min(...all), span = Math.max(...all) - lo || 1;
+  const X = (i) => ((i / (values.length - 1)) * 120).toFixed(1);
+  const Y = (v) => (37 - ((v - lo) / span) * 34).toFixed(1);
+  const svg = el(SVG, 'svg', { viewBox: '0 0 120 40', preserveAspectRatio: 'none', class: 'spark', role: 'img', 'aria-label': label });
+  if (usual != null) svg.append(el(SVG, 'path', { class: 'usual', d: `M0 ${Y(usual)}H120` }));
+  svg.append(el(SVG, 'path', { d: values.map((v, i) => (v == null ? '' : `${values[i - 1] == null ? 'M' : 'L'}${X(i)} ${Y(v)}`)).join('') }));
+  return svg;
+}
+
+// A drawn icon in the same stroke family as the tab icons; decorative, so the words beside it carry the meaning.
+const icon = (d, cls = '') => {
+  const svg = el(SVG, 'svg', { viewBox: '0 0 24 24', class: `ico ${cls}`.trim(), 'aria-hidden': 'true' });
+  svg.append(el(SVG, 'path', { d }));
+  return svg;
+};
+
+// Body Battery as a battery: the fill is the day's peak.
+function battery(value) {
+  const svg = el(SVG, 'svg', { viewBox: '0 0 44 22', class: 'battery', 'aria-hidden': 'true' });
+  svg.append(
+    el(SVG, 'rect', { x: 1, y: 1, width: 38, height: 20, rx: 4, class: 'bat-shell' }),
+    el(SVG, 'rect', { x: 40, y: 7, width: 3, height: 8, rx: 1, class: 'bat-cap' }),
+    el(SVG, 'rect', { x: 3, y: 3, width: (34 * Math.max(0, Math.min(100, value ?? 0))) / 100, height: 16, rx: 2, class: 'bat-fill' }),
   );
+  return svg;
+}
+
+// One metric card in its signal's ink: label and verdict pill, the value, how it compares, and an optional 14-day line.
+function metric({ ink, label, value, unit, subs = [], pill, glyph, series, progress }) {
+  const card = node('div', 'card metric');
+  card.dataset.ink = ink;
+  const head = node('div', 'mhead');
+  head.append(node('span', 'mdot'), node('span', null, label));
+  if (pill) head.append(node('span', `pill ${pill[0]}`, pill[1]));
+  const val = node('div', 'mval');
+  if (glyph) val.append(glyph);
+  val.append(node('span', null, value));
+  if (unit) val.append(node('span', 'unit', unit));
+  card.append(head, val, ...subs.filter(Boolean).map((t) => node('div', 'msub', t)));
+  const sp = series && spark(series);
+  if (sp) card.append(sp);
+  if (progress != null) {
+    const track = node('div', 'goalbar');
+    const fill = node('i');
+    fill.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
+    track.append(fill);
+    card.append(track);
+  }
+  return card;
+}
+
+// Last 14 days of one signal, with its usual (or null) as the dashed reference.
+function series14(k, name, usual, f = num) {
+  const v = state.days.slice(-14).map((x) => x[k]);
+  const seen = v.filter((x) => x != null);
+  return [v, usual, seen.length ? `${name}, last 14 days: ${f(Math.min(...seen))} to ${f(Math.max(...seen))}` : name];
 }
 
 const line = (label, data, color, dash = false) => ({
@@ -77,35 +134,6 @@ function trend(values, color, name, withBand = false) {
     { label: 'Your normal range', data: b.map((x) => x?.hi ?? null), fill: '-1', backgroundColor: alpha(css('--mfg'), 0.18), swatch: 'rect', ...edge }, // neutral: amber means "reference line" and went muddy on dark
     ...lines,
   ];
-}
-
-function el(ns, tag, attrs = {}) {
-  const node = document.createElementNS(ns, tag);
-  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-  return node;
-}
-
-// Body Battery as a battery: the fill is the day's peak.
-function batteryCard(value, sub) {
-  const SVG = 'http://www.w3.org/2000/svg';
-  const card = document.createElement('div');
-  card.className = 'card kpi';
-  const svg = el(SVG, 'svg', { viewBox: '0 0 44 22', class: 'battery', role: 'img', 'aria-label': value == null ? 'Body Battery peak unavailable' : `Body Battery peak ${value} out of 100` });
-  const pct = Math.max(0, Math.min(100, value ?? 0));
-  svg.append(
-    el(SVG, 'rect', { x: 1, y: 1, width: 38, height: 20, rx: 4, class: 'bat-shell' }),
-    el(SVG, 'rect', { x: 40, y: 7, width: 3, height: 8, rx: 1, class: 'bat-cap' }),
-    el(SVG, 'rect', { x: 3, y: 3, width: (34 * pct) / 100, height: 16, rx: 2, class: 'bat-fill' }),
-  );
-  const row = document.createElement('div');
-  row.className = 'valrow';
-  row.append(svg, text(Object.assign(document.createElement('div'), { className: 'value' }), num(value)));
-  card.append(
-    text(Object.assign(document.createElement('div'), { className: 'label' }), 'Body Battery peak'),
-    row,
-    text(Object.assign(document.createElement('div'), { className: 'sub' }), sub),
-  );
-  return card;
 }
 
 // Last night's stage totals as one proportional bar. Garmin's API gives totals and bed/wake times, not a per-minute timeline.
@@ -191,16 +219,39 @@ function draw(id, type, labels, datasets, { stacked = false, summary, horizontal
         },
       },
       scales: {
-        x: { ...axis, grid: { display: horizontal, color: css('--border') } },
-        y: { ...axis, ticks: { color: mfg, precision: whole ? 0 : undefined }, grid: { display: !horizontal, color: css('--border') }, beginAtZero: type === 'bar' || horizontal, ...yRange },
+        x: { ...axis, grid: { display: horizontal, color: css('--rule') } },
+        y: { ...axis, ticks: { color: mfg, precision: whole ? 0 : undefined }, grid: { display: !horizontal, color: css('--rule') }, beginAtZero: type === 'bar' || horizontal, ...yRange },
       },
     },
   });
 }
 
 // ---------- panels ----------
-const DRIVER = { hrv: ['HRV', 'ms'], restingHr: ['Resting HR', 'bpm'], sleepH: ['Sleep', 'h'], bbHigh: ['Body Battery peak', ''] };
-const fmtVal = (k, v) => (k === 'sleepH' ? hm(v) : `${num(v)}${DRIVER[k][1] ? ` ${DRIVER[k][1]}` : ''}`);
+// The four signals behind the readiness score, each as a card that says how it compares with your usual.
+const SIGNALS = [['hrv', 'hrv', 'HRV, last night', 'ms'], ['restingHr', 'rhr', 'Resting HR', 'bpm'], ['sleepH', 'sleep', 'Sleep', ''], ['bbHigh', 'bb', 'Body Battery peak', '']];
+
+function recoveryCards(r) {
+  const sleepScore = latest('sleepScore');
+  return SIGNALS.map(([k, ink, label, unit]) => {
+    const value = latest(k);
+    const f = k === 'sleepH' ? hm : num;
+    const p = r?.parts.find((x) => x.k === k && x.value === value); // only compare the reading the score used
+    const u = unit && ` ${unit}`;
+    let delta = '', pill = null;
+    if (p) {
+      const diff = value - p.base;
+      const shown = k === 'sleepH' ? Math.round(Math.abs(diff) * 60) : Math.round(Math.abs(diff));
+      delta = shown === 0 ? `At your usual ${f(p.base)}${u}` : `${diff > 0 ? '+' : '−'}${f(Math.abs(diff))}${u} vs usual ${f(p.base)}${u}`;
+      pill = p.z >= 0.5 ? ['good', 'Better'] : p.z <= -0.5 ? ['bad', 'Worse'] : ['', 'About usual'];
+    }
+    return metric({
+      ink, label, pill, value: f(value), unit: k === 'sleepH' || k === 'bbHigh' ? '' : unit,
+      glyph: k === 'bbHigh' ? battery(value) : null,
+      subs: [delta, withAge(k, k === 'sleepH' && sleepScore != null ? `Score ${num(sleepScore)}` : '')],
+      series: series14(k, label, p?.base ?? null, f),
+    });
+  });
+}
 
 function today(r, days) {
   const el = $('today');
@@ -211,10 +262,10 @@ function today(r, days) {
     el.dataset.tone = '';
     text($('today-h'), 'Not enough data yet');
     text($('today-detail'), 'Readiness needs about a week of HRV and sleep history to compare against.');
-    for (const sel of ['#today-load', '.today-score', '#drivers', '#today-chip']) el.querySelector(sel).hidden = true;
+    for (const sel of ['#today-load', '.today-score', '#today-date', '#today-chip']) el.querySelector(sel).hidden = true;
     return;
   }
-  for (const sel of ['#today-load', '.today-score', '#drivers']) el.querySelector(sel).hidden = false;
+  for (const sel of ['#today-load', '.today-score']) el.querySelector(sel).hidden = false;
   el.dataset.state = r.state;
   el.dataset.tone = verdictTone(r, ratio);
   text($('today-h'), verdict(r, ratio));
@@ -232,47 +283,24 @@ function today(r, days) {
   scale.setAttribute('aria-label', `Readiness ${r.score} out of 100, ${r.label}. Zones: under 30 strained, 30 to 49 below usual, 50 to 69 typical, 70 and up well recovered.`);
   $('marker').style.left = `${r.score}%`;
   scale.querySelectorAll('.tick').forEach((t) => (t.style.left = `${t.dataset.pos}%`));
-  $('drivers').replaceChildren(
-    ...r.parts.map((p) => {
-      const side = p.z > 0 ? 'pos' : 'neg';
-      const w = Math.min(Math.abs(p.z) / 2.5, 1) * 50;
-      const word = p.z >= 0.5 ? 'better than usual' : p.z <= -0.5 ? 'worse than usual' : 'about usual';
-      const row = document.createElement('div');
-      row.className = 'driver';
-      const name = document.createElement('div');
-      name.className = 'name';
-      name.append(text(document.createElement('b'), DRIVER[p.k][0]), text(document.createElement('span'), word));
-      const track = document.createElement('div');
-      track.className = 'dtrack';
-      const fill = document.createElement('div');
-      fill.className = `dfill ${Math.abs(p.z) < 0.5 ? '' : side}`;
-      fill.style.width = `${w}%`;
-      fill.style[p.z > 0 ? 'left' : 'right'] = '50%';
-      track.append(fill);
-      const vs = text(document.createElement('div'), `${fmtVal(p.k, p.value)}, usual ${fmtVal(p.k, p.base)}`);
-      vs.className = 'vs';
-      row.append(name, track, vs);
-      return row;
-    }),
-  );
 }
 
 function recovery() {
   const d = state.days, dates = d.map((x) => fmtDate(x.date)), col = (k) => d.map((x) => x[k]);
   const r = readiness(d);
   today(r, d);
-  const sleepScore = latest('sleepScore');
-  kpis('k-recovery', [
-    ['HRV, last night', [num(latest('hrv')), 'ms'], withAge('hrv', `7-day avg ${num(avg7('hrv'))} ms`)],
-    ['Resting HR', [num(latest('restingHr')), 'bpm'], withAge('restingHr', `7-day avg ${num(avg7('restingHr'))} bpm`)],
-    ['Sleep', hm(latest('sleepH')), withAge('sleepH', sleepScore == null ? '' : `Score ${num(sleepScore)}`)],
-    batteryCard(latest('bbHigh'), withAge('bbHigh', `7-day avg ${num(avg7('bbHigh'))}`)),
-  ]);
-  const s1 = css('--s1');
-  draw('c-hrv', 'line', dates, trend(col('hrv'), s1, 'Daily HRV', true), { summary: describe('HRV', col('hrv'), ' ms'), whole: true });
-  draw('c-rhr', 'line', dates, trend(col('restingHr'), s1, 'Resting HR', true), { summary: describe('Resting heart rate', col('restingHr'), ' bpm'), whole: true });
-  const range = d.map((x) => (x.bbLow != null && x.bbHigh != null ? [x.bbLow, x.bbHigh] : null));
-  draw('c-bb', 'bar', dates, [{ ...bar('Daily range', range, css('--bb')), borderSkipped: false }], { summary: describe('Body Battery daily high', col('bbHigh')), yRange: { min: 0, max: 100 } });
+  $('k-recovery').replaceChildren(...recoveryCards(r));
+  draw('c-hrv', 'line', dates, trend(col('hrv'), css('--ink-hrv'), 'Daily HRV', true), { summary: describe('HRV', col('hrv'), ' ms'), whole: true });
+  draw('c-rhr', 'line', dates, trend(col('restingHr'), css('--ink-rhr'), 'Resting HR', true), { summary: describe('Resting heart rate', col('restingHr'), ' bpm'), whole: true });
+  // Ninety floating bars read as a solid wall, so past a month the peak is a line with its usual range, like HRV.
+  const bbBars = d.length <= 31;
+  text($('cap-bb'), bbBars ? 'Body Battery, daily low to high' : 'Body Battery, daily peak');
+  if (bbBars) {
+    const range = d.map((x) => (x.bbLow != null && x.bbHigh != null ? [x.bbLow, x.bbHigh] : null));
+    draw('c-bb', 'bar', dates, [{ ...bar('Daily range', range, css('--ink-bb')), borderSkipped: false }], { summary: describe('Body Battery daily high', col('bbHigh')), yRange: { min: 0, max: 100 } });
+  } else {
+    draw('c-bb', 'line', dates, trend(col('bbHigh'), css('--ink-bb'), 'Daily peak', true), { summary: describe('Body Battery daily peak', col('bbHigh')), whole: true, yRange: { max: 100 } });
+  }
   night();
   sleepChart(d);
 }
@@ -283,7 +311,7 @@ function sleepChart(d) {
   const stage = (k) => (nightly ? d.map((x) => x[k]) : [...byWeek(d, k).values()]);
   const labels = nightly ? d.map((x) => fmtDate(x.date)) : [...byWeek(d, 'sleepH').keys()].map(fmtDate);
   text($('cap-sleep'), nightly ? 'Sleep stages, nightly (hours)' : 'Sleep stages, weekly average per night (hours)');
-  const seg = (name, k, token) => ({ ...bar(name, stage(k), css(token)), borderColor: css('--card'), borderWidth: 1 });
+  const seg = (name, k, token) => ({ ...bar(name, stage(k), css(token)), borderColor: css('--panel'), borderWidth: 1 });
   draw('c-sleep', 'bar', labels, [seg('Deep', 'deepH', '--sl-deep'), seg('REM', 'remH', '--sl-rem'), seg('Light', 'lightH', '--sl-light'), seg('Awake', 'awakeH', '--sl-awake')], { stacked: true, summary: `Sleep stages (deep, REM, light, awake) in hours. ${describe('Total sleep', d.map((x) => x.sleepH), ' h')}`, tipTitle: nightly ? undefined : (items) => `Week of ${items[0].label}` });
 }
 const byWeek = (d, k) => new Map(weekly(d, k, 'mean').map((x) => [x.week, x.v]));
@@ -340,12 +368,11 @@ function training() {
   const d = state.days, ls = loadSeries(d), last = ls.at(-1);
   const since = (n) => d.at(-n)?.date ?? '0000';
   loadHero(last, since);
-  const s1 = css('--s1'), s2 = css('--s2');
   const w = weekly(d, 'load');
-  const wk_ = weekBars(w, d, s1);
+  const wk_ = weekBars(w, d, css('--ink-load'));
   text($('cap-wload'), `Weekly training load${wk_.any ? ' (lighter = partial week)' : ''}`);
   draw('c-wload', 'bar', w.map((x) => fmtDate(x.week)), [bar('Load', w.map((x) => x.v), wk_.colors)], { summary: describe('Weekly training load', w.map((x) => x.v)), tipTitle: wk_.title });
-  draw('c-ac', 'line', ls.map((x) => fmtDate(x.date)), [line('Acute (7-day)', ls.map((x) => x.acute), s1), line('Chronic (weekly avg)', ls.map((x) => x.chronic), s2, true)], { summary: `Acute (7-day) and chronic (28-day weekly average) training load. ${describe('Acute load', ls.map((x) => x.acute))}` });
+  draw('c-ac', 'line', ls.map((x) => fmtDate(x.date)), [line('Acute (7-day)', ls.map((x) => x.acute), css('--ink-load')), line('Chronic (weekly avg)', ls.map((x) => x.chronic), css('--mfg'), true)], { summary: `Acute (7-day) and chronic (28-day weekly average) training load. ${describe('Acute load', ls.map((x) => x.acute))}` });
 
   const z = [0, 0, 0, 0, 0];
   for (const a of state.activities) if (a.date >= since(28)) a.zones.forEach((s, i) => (z[i] += s / 60));
@@ -373,18 +400,18 @@ function activity() {
   const roll = d.map((_, i) => mean(d.slice(Math.max(0, i - 6), i + 1).map((x) => x.steps)));
   const im = weekly(d, 'intensityMin');
   const thisWeek = im.at(-1)?.v;
-  const imBars = weekBars(im, d, css('--s1'));
-  kpis('k-activity', [
-    [dayLabel('steps', 'Steps'), num(latest('steps')), `7-day avg ${num(avg7('steps'))}`],
-    ['Intensity minutes', num(thisWeek), `this week${imBars.last ? ' so far' : ''}, goal 150`, thisWeek >= 150 ? 'Goal reached' : ''],
-    [dayLabel('calories', 'Calories burned'), num(latest('calories')), `7-day avg ${num(avg7('calories'))}`],
-    [dayLabel('stress', 'Average stress'), num(latest('stress')), `7-day avg ${num(avg7('stress'))}`],
-  ]);
-  const s1 = css('--s1'), s2 = css('--s2');
-  draw('c-steps', 'bar', dates, [bar('Steps', col('steps'), alpha(s1, 0.45)), { ...line('7-day average', roll, s1), type: 'line', borderWidth: 3, pointRadius: 0 }], { summary: describe('Daily steps', col('steps')) });
+  const imBars = weekBars(im, d, css('--ink-int'));
+  const avg28 = (k) => mean(d.slice(-28).map((x) => x[k]));
+  $('k-activity').replaceChildren(
+    metric({ ink: 'steps', label: dayLabel('steps', 'Steps'), value: num(latest('steps')), subs: [`7-day avg ${num(avg7('steps'))}`], series: series14('steps', 'Steps', avg28('steps')) }),
+    metric({ ink: 'int', label: 'Intensity minutes', value: num(thisWeek), unit: 'min', subs: [`This week${imBars.last ? ' so far' : ''}, goal 150`, thisWeek != null && thisWeek < 150 ? `${num(150 - thisWeek)} min to go` : ''], pill: thisWeek >= 150 ? ['good', 'Goal reached'] : null, progress: thisWeek == null ? null : thisWeek / 150 }),
+    metric({ ink: 'cal', label: dayLabel('calories', 'Calories burned'), value: num(latest('calories')), subs: [`7-day avg ${num(avg7('calories'))}`], series: series14('calories', 'Calories', avg28('calories')) }),
+    metric({ ink: 'stress', label: dayLabel('stress', 'Average stress'), value: num(latest('stress')), subs: [`7-day avg ${num(avg7('stress'))}`], series: series14('stress', 'Average stress', avg28('stress')) }),
+  );
+  draw('c-steps', 'bar', dates, [bar('Steps', col('steps'), alpha(css('--ink-steps'), 0.45)), { ...line('7-day average', roll, css('--ink-steps')), type: 'line', borderWidth: 3, pointRadius: 0 }], { summary: describe('Daily steps', col('steps')) });
   text($('cap-im'), `Weekly intensity minutes${imBars.any ? ' (lighter = partial week)' : ''}`);
-  draw('c-im', 'bar', im.map((x) => fmtDate(x.week)), [bar('Intensity minutes', im.map((x) => x.v), imBars.colors), { ...line('Goal', im.map(() => 150), s2, true), type: 'line', pointRadius: 0 }], { summary: describe('Weekly intensity minutes', im.map((x) => x.v)), tipTitle: imBars.title });
-  draw('c-stress', 'line', dates, trend(col('stress'), s1, 'Average stress'), { summary: describe('Average stress', col('stress')), whole: true });
+  draw('c-im', 'bar', im.map((x) => fmtDate(x.week)), [bar('Intensity minutes', im.map((x) => x.v), imBars.colors), { ...line('Goal', im.map(() => 150), css('--mfg'), true), type: 'line', pointRadius: 0 }], { summary: describe('Weekly intensity minutes', im.map((x) => x.v)), tipTitle: imBars.title });
+  draw('c-stress', 'line', dates, trend(col('stress'), css('--ink-stress'), 'Average stress'), { summary: describe('Average stress', col('stress')), whole: true });
 }
 
 const emptyRow = (cols, msg) => {
@@ -411,7 +438,7 @@ function insightsPanel() {
       change.className = 'num';
       const pct = `${Math.abs(x.pct).toFixed(1)}%`;
       if (Math.abs(x.pct) < 1) change.append(`flat ${pct}`);
-      else change.append(Object.assign(text(document.createElement('span'), x.pct > 0 ? '▲' : '▼'), { ariaHidden: 'true', className: 'arrow' }), Object.assign(text(document.createElement('span'), x.pct > 0 ? ' up ' : ' down '), { className: 'sr-only' }), pct);
+      else change.append(icon(x.pct > 0 ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6', 'arrow'), Object.assign(text(document.createElement('span'), x.pct > 0 ? ' up ' : ' down '), { className: 'sr-only' }), pct);
       if (x.good && Math.abs(x.pct) >= 3) {
         const better = Math.sign(x.pct) === x.good;
         change.append(' ', Object.assign(text(document.createElement('span'), better ? 'better' : 'worse'), { className: better ? 'good' : 'bad' }));
@@ -422,16 +449,18 @@ function insightsPanel() {
   );
   // Strongest relationship first and widest; weak ones step back.
   const ranked = [...insights(state.days)].sort((a, b) => Math.abs(b.r ?? 0) - Math.abs(a.r ?? 0));
-  $('insights').replaceChildren(
+  $('insight-cards').replaceChildren(
     ...ranked.map((i) => {
       const card = document.createElement('div');
       card.className = `card insight${Math.abs(i.r ?? 0) < 0.2 ? ' weak' : ''}`;
+      const head = node('div', 'head');
+      head.append(i.xs, icon('M5 12h14M13 6l6 6-6 6'), node('span', 'sr-only', ' goes with '), i.ys);
       let track = null;
       if (i.r != null) {
         track = document.createElement('div');
         track.className = 'dtrack';
         const fill = document.createElement('div');
-        fill.className = 'dfill s1';
+        fill.className = 'dfill';
         fill.style.width = `${Math.abs(i.r) * 50}%`;
         fill.style[i.r > 0 ? 'left' : 'right'] = '50%';
         track.append(fill);
@@ -439,7 +468,7 @@ function insightsPanel() {
         track.setAttribute('aria-label', `Relationship strength ${i.r.toFixed(2)} on a scale from minus 1 to 1`);
       }
       card.append(
-        Object.assign(text(document.createElement('div'), `${i.xs} → ${i.ys}`), { className: 'head' }),
+        head,
         text(Object.assign(document.createElement('div'), { className: 'r' }), i.r == null ? 'r = —' : `r = ${i.r.toFixed(2)}`),
         ...(track ? [track] : []),
         text(document.createElement('p'), i.text),
@@ -477,15 +506,6 @@ addEventListener('resize', () => {
 // ---------- tabs ----------
 const APP_TITLE = 'Garmin Companion';
 
-// On a very narrow screen the tab rail scrolls; bring the selected tab into view by moving the rail itself.
-// (scrollIntoView would also move Chrome's keyboard starting point, so the first Tab would skip the skip link.)
-function revealTab(btn) {
-  const rail = btn.parentElement;
-  const r = rail.getBoundingClientRect(), b = btn.getBoundingClientRect();
-  if (b.right > r.right) rail.scrollLeft += b.right - r.right + 8;
-  else if (b.left < r.left) rail.scrollLeft -= r.left - b.left + 8;
-}
-
 function select(next, focus = false) {
   tab = next;
   for (const t of TABS) {
@@ -495,9 +515,10 @@ function select(next, focus = false) {
     $(`p-${t}`).hidden = t !== tab;
   }
   history.replaceState(null, '', `#${tab}`); // replaceState does not fire hashchange, so this cannot loop
-  document.title = `${$(`t-${tab}`).textContent} · ${APP_TITLE}`;
+  const name = $(`t-${tab}`).textContent.trim();
+  text($('area'), name);
+  document.title = `${name} · ${APP_TITLE}`;
   if (focus) $(`t-${tab}`).focus();
-  revealTab($(`t-${tab}`));
   render();
 }
 
@@ -507,10 +528,10 @@ addEventListener('hashchange', () => {
   if (TABS.includes(h) && h !== tab) select(h);
 });
 
-document.querySelector('.tabs').addEventListener('click', (e) => e.target.dataset.tab && select(e.target.dataset.tab));
+document.querySelector('.tabs').addEventListener('click', (e) => { const t = e.target.closest('[data-tab]'); if (t) select(t.dataset.tab); });
 document.querySelector('.tabs').addEventListener('keydown', (e) => {
   const i = TABS.indexOf(tab);
-  const to = { ArrowRight: (i + 1) % 4, ArrowLeft: (i + 3) % 4, Home: 0, End: 3 }[e.key];
+  const to = { ArrowRight: (i + 1) % 4, ArrowDown: (i + 1) % 4, ArrowLeft: (i + 3) % 4, ArrowUp: (i + 3) % 4, Home: 0, End: 3 }[e.key];
   if (to !== undefined) (e.preventDefault(), select(TABS[to], true));
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
