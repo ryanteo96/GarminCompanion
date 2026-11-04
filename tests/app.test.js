@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { authed, mintCookie, same } from '../lib/auth.js';
 import { addDays, normalize, parseToken, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
-import { corr, insights, loadSeries, readiness, weekStart, withLoad } from '../public/stats.js';
+import { corr, explain, insights, loadSeries, readiness, weekStart, withLoad } from '../public/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
 
@@ -71,4 +71,23 @@ test('stats: correlation, load ratio, readiness, insights on sample data', () =>
   const sleepHrv = insights(d).find((i) => i.id === 'sleep-hrv');
   assert.ok(sleepHrv.r > 0.3, `sample sleep->HRV link should be visible, got ${sleepHrv.r}`);
   assert.match(insights(d.slice(-5))[0].text, /Not enough/);
+});
+
+test('readiness states, headline, driver values and explanation', () => {
+  const flat = Array.from({ length: 30 }, (_, i) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, hrv: 50 + (i % 3), restingHr: 55 + (i % 2), sleepH: 7 + (i % 2) * 0.2, bbHigh: 80 + (i % 3) }));
+  const at = (last) => readiness([...flat, { date: '2026-10-31', ...last }]);
+  const bad = at({ hrv: 30, restingHr: 66, sleepH: 4.5, bbHigh: 55 });
+  assert.equal(bad.state, 'strained');
+  assert.equal(bad.head, 'Keep today easy');
+  assert.equal(bad.parts.find((p) => p.k === 'hrv').value, 30);
+  assert.ok(bad.parts.find((p) => p.k === 'hrv').base > 49);
+  const why = explain(bad);
+  for (const phrase of ['HRV is low', 'sleep was short', 'Body Battery peaked low']) assert.ok(why.toLowerCase().includes(phrase.toLowerCase()), phrase);
+  assert.match(why, /^[A-Z].*compared with your own last 28 days\.$/);
+  const good = at({ hrv: 62, restingHr: 50, sleepH: 8.8, bbHigh: 98 });
+  assert.equal(good.state, 'well');
+  assert.match(explain(good), /HRV is high/);
+  assert.equal(good.parts.length, 4); // sentence names at most 3 drivers, the bars show all 4
+  assert.equal(explain(at({ hrv: 51, restingHr: 55.5, sleepH: 7.1, bbHigh: 81 })), 'Everything is close to your own 28-day norm.');
+  assert.equal(readiness(flat.slice(0, 5)), null);
 });

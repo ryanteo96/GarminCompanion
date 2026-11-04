@@ -51,6 +51,28 @@
       <p id="status" class="muted" role="status">Loading…</p>
 
       <section id="p-recovery" role="tabpanel" aria-labelledby="t-recovery" hidden>
+        <section id="today" class="card today" aria-labelledby="today-h" hidden>
+          <div class="today-main">
+            <h2 id="today-h" class="verdict"></h2>
+            <p id="today-detail" class="detail"></p>
+            <p id="today-load" class="small muted"></p>
+          </div>
+          <div class="today-score">
+            <p class="score"><span id="score-n" class="score-n"></span><span class="muted"> / 100</span> <span id="score-state" class="state"></span></p>
+            <div class="scale" id="scale" role="img">
+              <span class="zones"><i></i><i></i><i></i><i></i></span>
+              <span class="marker" id="marker"></span>
+              <span class="tick" data-pos="30">30</span><span class="tick" data-pos="50">50</span><span class="tick" data-pos="70">70</span>
+            </div>
+            <p id="today-date" class="small muted"></p>
+          </div>
+          <div class="drivers" id="drivers" aria-label="What is driving the score"></div>
+          <details class="how">
+            <summary>How is this scored?</summary>
+            <p>Readiness compares last night's HRV, resting heart rate, sleep time and Body Battery peak with your own previous 28 days. 60 means typical for you, and each standard deviation from your norm moves it 20 points. Under 30 is strained, 30 to 49 below usual, 50 to 69 typical, 70 and up well recovered. It is a simple guide computed here, not a Garmin metric and not medical advice.</p>
+            <p>The load ratio is your last 7 days of training load divided by your usual week (28-day total divided by 4). Under 0.8 is lighter than usual, up to 1.3 in your sweet spot, up to 1.5 ramping up, above that spiking.</p>
+          </details>
+        </section>
         <div class="kpis" id="k-recovery"></div>
         <div class="grid">
           <figure class="card"><figcaption>Heart rate variability (ms)</figcaption><div class="cv"><canvas id="c-hrv" role="img"></canvas></div></figure>

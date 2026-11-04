@@ -1,4 +1,4 @@
-import { insights, loadSeries, mean, ratioLabel, readiness, weekDeltas, weekly, withLoad } from './stats.js';
+import { explain, insights, loadSeries, mean, ratioLabel, readiness, weekDeltas, weekly, withLoad } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
@@ -68,12 +68,64 @@ function draw(id, type, labels, datasets, { stacked = false, summary, horizontal
 }
 
 // ---------- panels ----------
+const DRIVER = { hrv: ['HRV', 'ms'], restingHr: ['Resting HR', 'bpm'], sleepH: ['Sleep', 'h'], bbHigh: ['Body Battery peak', ''] };
+const fmtVal = (k, v) => (k === 'sleepH' ? hm(v) : `${num(v)}${DRIVER[k][1] ? ` ${DRIVER[k][1]}` : ''}`);
+
+function today(r, days) {
+  const el = $('today');
+  el.hidden = false;
+  const lastDate = days.at(-1).date;
+  const ratio = loadSeries(days).at(-1).ratio;
+  if (!r) {
+    el.dataset.state = '';
+    text($('today-h'), 'Not enough data yet');
+    text($('today-detail'), 'Readiness needs about a week of HRV and sleep history to compare against.');
+    for (const sel of ['#today-load', '.today-score', '#drivers']) el.querySelector(sel).hidden = true;
+    return;
+  }
+  for (const sel of ['#today-load', '.today-score', '#drivers']) el.querySelector(sel).hidden = false;
+  el.dataset.state = r.state;
+  text($('today-h'), r.head);
+  text($('today-detail'), explain(r));
+  text($('today-load'), ratio == null ? '' : `Training load ratio ${ratio.toFixed(2)}: ${ratioLabel(ratio).toLowerCase()}.`);
+  text($('score-n'), String(r.score));
+  text($('score-state'), r.label);
+  text($('today-date'), r.date === lastDate ? `Based on ${fmtDate(r.date)}.` : `Based on ${fmtDate(r.date)}. Garmin has not reported ${fmtDate(lastDate)} yet.`);
+  const scale = $('scale');
+  scale.setAttribute('aria-label', `Readiness ${r.score} out of 100, ${r.label}. Zones: under 30 strained, 30 to 49 below usual, 50 to 69 typical, 70 and up well recovered.`);
+  $('marker').style.left = `${r.score}%`;
+  scale.querySelectorAll('.tick').forEach((t) => (t.style.left = `${t.dataset.pos}%`));
+  $('drivers').replaceChildren(
+    ...r.parts.map((p) => {
+      const side = p.z > 0 ? 'pos' : 'neg';
+      const w = Math.min(Math.abs(p.z) / 2.5, 1) * 50;
+      const word = p.z >= 0.5 ? 'better than usual' : p.z <= -0.5 ? 'worse than usual' : 'about usual';
+      const row = document.createElement('div');
+      row.className = 'driver';
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.append(text(document.createElement('b'), DRIVER[p.k][0]), text(document.createElement('span'), word));
+      const track = document.createElement('div');
+      track.className = 'dtrack';
+      const fill = document.createElement('div');
+      fill.className = `dfill ${Math.abs(p.z) < 0.5 ? '' : side}`;
+      fill.style.width = `${w}%`;
+      fill.style[p.z > 0 ? 'left' : 'right'] = '50%';
+      track.append(fill);
+      const vs = text(document.createElement('div'), `${fmtVal(p.k, p.value)}, usual ${fmtVal(p.k, p.base)}`);
+      vs.className = 'vs';
+      row.append(name, track, vs);
+      return row;
+    }),
+  );
+}
+
 function recovery() {
   const d = state.days, dates = d.map((x) => fmtDate(x.date)), col = (k) => d.map((x) => x[k]);
   const r = readiness(d);
+  today(r, d);
   const sleepScore = latest('sleepScore');
   kpis('k-recovery', [
-    ['Readiness', r ? String(r.score) : '—', r ? 'vs your 28-day baseline' : 'Needs a week of data', r?.label],
     ['HRV, last night', `${num(latest('hrv'))} ms`, `7-day avg ${num(avg7('hrv'))} ms`],
     ['Resting HR', `${num(latest('restingHr'))} bpm`, `7-day avg ${num(avg7('restingHr'))} bpm`],
     ['Sleep', hm(latest('sleepH')), sleepScore == null ? '' : `Score ${num(sleepScore)}`],

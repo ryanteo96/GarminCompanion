@@ -48,20 +48,40 @@ export function readiness(days) {
   let i = days.length - 1;
   while (i >= 0 && (days[i].hrv == null || days[i].sleepH == null)) i--;
   if (i < 7) return null;
-  const base = days.slice(Math.max(0, i - 28), i);
   const parts = [['hrv', 1], ['restingHr', -1], ['sleepH', 1], ['bbHigh', 1]]
     .map(([k, sign]) => {
-      const b = base.map((d) => d[k]);
+      const b = base_(days, i, k);
       const s = sd(b);
       return days[i][k] == null || s == null || b.filter((x) => x != null).length < 7 || s === 0
         ? null
-        : { k, z: (sign * (days[i][k] - mean(b))) / s };
+        : { k, z: (sign * (days[i][k] - mean(b))) / s, value: days[i][k], base: mean(b) };
     })
     .filter(Boolean);
   if (parts.length < 2) return null;
   const score = Math.round(clamp(60 + 20 * mean(parts.map((p) => p.z)), 0, 100));
-  const label = score >= 70 ? 'Well recovered' : score >= 50 ? 'Typical for you' : score >= 30 ? 'Below usual' : 'Strained';
-  return { score, label, date: days[i].date, parts };
+  const [state, label, head] =
+    score >= 70 ? ['well', 'Well recovered', 'Good day for a hard session']
+    : score >= 50 ? ['typical', 'Typical for you', 'A normal training day fits']
+    : score >= 30 ? ['below', 'Below usual', 'Take it easier today']
+    : ['strained', 'Strained', 'Keep today easy'];
+  return { score, label, state, head, date: days[i].date, parts };
+}
+
+const base_ = (days, i, k) => days.slice(Math.max(0, i - 28), i).map((d) => d[k]);
+
+const PHRASE = {
+  hrv: ['HRV is low', 'HRV is high'],
+  restingHr: ['resting HR is high', 'resting HR is low'],
+  sleepH: ['sleep was short', 'sleep was long'],
+  bbHigh: ['Body Battery peaked low', 'Body Battery peaked high'],
+};
+
+// One plain sentence naming the drivers that sit at least 1 standard deviation from your norm.
+export function explain(r) {
+  const notable = r.parts.filter((p) => Math.abs(p.z) >= 1).sort((a, b) => Math.abs(b.z) - Math.abs(a.z)).slice(0, 3).map((p) => PHRASE[p.k][p.z < 0 ? 0 : 1]);
+  if (!notable.length) return 'Everything is close to your own 28-day norm.';
+  const list = notable.length > 1 ? `${notable.slice(0, -1).join(', ')} and ${notable.at(-1)}` : notable[0];
+  return `${list[0].toUpperCase()}${list.slice(1)}, compared with your own last 28 days.`;
 }
 
 // Acute (7-day sum) vs chronic (28-day sum / 4) training load.
