@@ -1,6 +1,6 @@
 /* Tokens from design-system/garmin-companion/MASTER.md (Data-Dense Dashboard), plus a dark theme. */
 :root {
-  --bg: #f8fafc; --card: #ffffff; --fg: #1e3a8a; --mfg: #475569; --border: #dbeafe; --muted: #e9eef6;
+  --bg: #f8fafc; --card: #ffffff; --fg: #1e3a8a; --text: #1e293b; --mfg: #475569; --border: #dbeafe; --muted: #e9eef6;
   --primary: #1e40af; --on-primary: #ffffff; --accent-text: #b45309; --ring: #1e40af; --err: #dc2626;
   --s1: #2563eb; --s2: #d97706;
   --sl-deep: #3730a3; --sl-rem: #a21caf; --sl-light: #0284c7; --sl-awake: #64748b;
@@ -11,7 +11,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b1220; --card: #111a2e; --fg: #e2e8f0; --mfg: #9fb0c8; --border: #22304f; --muted: #1a2540;
+    --bg: #0b1220; --card: #111a2e; --fg: #e2e8f0; --text: #e2e8f0; --mfg: #9fb0c8; --border: #22304f; --muted: #1a2540;
     --primary: #60a5fa; --on-primary: #0b1220; --accent-text: #fbbf24; --ring: #93c5fd; --err: #f87171;
     --s1: #60a5fa; --s2: #fbbf24;
     --sl-deep: #818cf8; --sl-rem: #e879f9; --sl-light: #7dd3fc; --sl-awake: #94a3b8;
@@ -20,10 +20,13 @@
   }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 400 16px/1.5 var(--sans); }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.5 var(--sans); }
 h1 { font-size: 1.25rem; margin: 0; }
+/* Brand navy for headings and the numbers that matter; neutral ink for prose, labels and table cells. */
+h1, .verdict, .kpi .value, .score-n, .a-name, .night-head, .driver .name b { color: var(--fg); }
 :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.skip { position: absolute; left: -999px; } .skip:focus { left: var(--sp-2); top: var(--sp-2); background: var(--card); padding: var(--sp-2); z-index: 9; }
+.skip { position: absolute; left: -999px; color: var(--primary); font-weight: 600; }
+.skip:focus { left: var(--sp-2); top: var(--sp-2); z-index: 9; display: flex; align-items: center; min-height: 44px; padding: 0 var(--sp-4); background: var(--card); border: 2px solid var(--primary); border-radius: 8px; }
 .muted { color: var(--mfg); } .small { font-size: 0.875rem; } .err { color: var(--err); margin: 0; }
 [hidden] { display: none !important; }
 
@@ -31,11 +34,12 @@ h1 { font-size: 1.25rem; margin: 0; }
 .meta { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); }
 .top .range { margin-left: auto; display: flex; align-items: center; gap: var(--sp-2); color: var(--mfg); font-size: 0.875rem; }
 .badge { background: var(--muted); color: var(--fg); border: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; padding: 2px var(--sp-2); border-radius: 999px; }
-select, input { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: 8px; min-height: 44px; padding: 0 var(--sp-3); }
+select, input { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 8px; min-height: 44px; padding: 0 var(--sp-3); }
 
 .tabs { display: flex; gap: var(--sp-1); max-width: 1280px; margin: 0 auto; padding: 0 var(--sp-4); border-bottom: 1px solid var(--border); overflow-x: auto; }
 .tabs button { font: 500 1rem var(--sans); color: var(--mfg); background: none; border: 0; border-bottom: 3px solid transparent; min-height: 44px; padding: 0 var(--sp-4); cursor: pointer; transition: color 0.15s; }
 .tabs button:hover { color: var(--fg); }
+.tabs button:focus-visible { outline-offset: -3px; } /* inset: the rail scrolls, so an outer ring would be clipped */
 .tabs button[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
 
 main { max-width: 1280px; margin: 0 auto; padding: var(--sp-4) max(var(--sp-4), env(safe-area-inset-right)) var(--sp-4) max(var(--sp-4), env(safe-area-inset-left)); }
@@ -147,3 +151,25 @@ tbody tr:hover { background: var(--muted); }
   #acts-wrap { display: none; }
   .acts-list { display: block; }
 }
+
+/* ---- Polish: units, valence, insights, footer, browser surfaces ---- */
+.kpi .unit { font: 400 0.875rem var(--sans); color: var(--mfg); margin-left: var(--sp-1); }
+.good { color: var(--st-well); font-weight: 600; } .bad { color: var(--st-strained); font-weight: 600; }
+#insights.grid { grid-template-columns: 1fr; }
+@media (min-width: 800px) {
+  #insights.grid { grid-template-columns: repeat(2, 1fr); }
+  #insights .insight:first-child { grid-column: 1 / -1; }
+}
+.insight .head { font-weight: 500; }
+.insight.weak .r { color: var(--mfg); }
+.dfill.s1 { background: var(--s1); }
+.foot { max-width: 1280px; margin: var(--sp-4) auto 0; padding: var(--sp-4) max(var(--sp-4), env(safe-area-inset-right)) max(var(--sp-4), env(safe-area-inset-bottom)) max(var(--sp-4), env(safe-area-inset-left)); border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); }
+.showpw { display: flex; align-items: center; gap: var(--sp-2); min-height: 44px; font-size: 0.875rem; color: var(--mfg); }
+.showpw input { min-height: 0; width: 20px; height: 20px; padding: 0; }
+.btn:hover { border-color: var(--primary); }
+.btn.primary:hover { background: color-mix(in srgb, var(--primary) 85%, var(--fg)); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+::selection { background: color-mix(in srgb, var(--primary) 28%, transparent); }
+input, select { caret-color: var(--primary); accent-color: var(--primary); }
+.tabs, .tablewrap { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+table, .kpi .value, .score-n { font-variant-numeric: tabular-nums; }

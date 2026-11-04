@@ -35,6 +35,7 @@
       <p class="muted">Your data is private. Enter the dashboard password.</p>
       <label for="pw">Password</label>
       <input id="pw" type="password" autocomplete="current-password" required>
+      <label class="showpw"><input id="showpw" type="checkbox"> Show password</label>
       <p id="login-err" class="err" role="alert" hidden></p>
       <button class="btn primary" type="submit">Unlock</button>
     </form>
@@ -141,6 +142,11 @@
         <p class="muted small">These are patterns in your own history, not medical advice. Readiness is a simple score computed here from your 28-day baseline, not a Garmin metric.</p>
       </section>
     </main>
+
+    <footer class="foot">
+      <button id="logout" class="btn small" type="button">Sign out</button>
+      <span class="muted small">Signing out also clears the copy of your data cached in this browser.</span>
+    </footer>
   </div>
 
   <script src="/vendor/chart.umd.min.js"></script>

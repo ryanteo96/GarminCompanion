@@ -4,9 +4,10 @@ import { test } from 'node:test';
 import { authed, mintCookie, same } from '../lib/auth.js';
 import { addDays, clock, normalize, parseToken, pickToday, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
+import logout from '../api/logout.js';
 import { friendly } from '../public/errors.js';
 import { ago } from '../public/time.js';
-import { band, corr, explain, isPartialWeek, insights, loadSeries, readiness, rolling, weekStart, withLoad } from '../public/stats.js';
+import { band, corr, explain, isPartialWeek, insights, loadSeries, readiness, rolling, weekDeltas, weekStart, withLoad } from '../public/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
 
@@ -165,4 +166,27 @@ test('isPartialWeek flags the first and last week of a range', () => {
   assert.ok(isPartialWeek('2026-11-02', '2026-10-07', '2026-11-04'), 'current week ends after the data');
   assert.ok(!isPartialWeek('2026-10-26', '2026-10-07', '2026-11-04'));
   assert.ok(!isPartialWeek('2026-11-02', '2026-10-07', '2026-11-08'), 'complete once Sunday is in the data');
+});
+
+test('logout clears the cookie and only accepts POST', async () => {
+  const run = async (method, headers = {}) => {
+    const out = { headers: {} };
+    await logout({ method, headers }, { setHeader: (k, v) => (out.headers[k] = v), end: (b) => (out.body = b), set statusCode(v) { out.status = v; } });
+    return out;
+  };
+  const ok = await run('POST', { 'x-forwarded-proto': 'https' });
+  assert.equal(ok.status, 200);
+  assert.match(ok.headers['Set-Cookie'], /^gc=;.*HttpOnly.*SameSite=Strict.*Max-Age=0.*Secure$/);
+  assert.equal((await run('GET')).status, 405);
+  assert.doesNotMatch((await run('POST')).headers['Set-Cookie'], /Secure/, 'no Secure flag over plain http');
+});
+
+test('weekDeltas says which direction is good', () => {
+  const days = Array.from({ length: 28 }, (_, i) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, hrv: i < 21 ? 50 : 60, restingHr: i < 21 ? 55 : 60, load: 100 }));
+  const by = Object.fromEntries(weekDeltas(days).map((d) => [d.k, d]));
+  assert.equal(by.hrv.good, 1);
+  assert.equal(by.restingHr.good, -1);
+  assert.equal(by.load.good, 0);
+  assert.ok(by.hrv.pct > 15 && by.restingHr.pct > 8);
+  assert.equal(by.steps, undefined, 'metrics with no data are left out');
 });

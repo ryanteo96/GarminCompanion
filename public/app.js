@@ -41,7 +41,11 @@ function kpis(id, items) {
       const card = document.createElement('div');
       card.className = 'card kpi';
       for (const [cls, t] of [['label', label], ['value', value], ['sub', sub], ['tag', tag]]) {
-        if (t) card.append(text(Object.assign(document.createElement('div'), { className: cls }), t));
+        if (!t) continue;
+        const div = Object.assign(document.createElement('div'), { className: cls });
+        if (Array.isArray(t)) div.append(t[0], Object.assign(text(document.createElement('span'), t[1]), { className: 'unit' }));
+        else text(div, t);
+        card.append(div);
       }
       return card;
     }),
@@ -250,8 +254,8 @@ function recovery() {
   today(r, d);
   const sleepScore = latest('sleepScore');
   kpis('k-recovery', [
-    ['HRV, last night', `${num(latest('hrv'))} ms`, withAge('hrv', `7-day avg ${num(avg7('hrv'))} ms`)],
-    ['Resting HR', `${num(latest('restingHr'))} bpm`, withAge('restingHr', `7-day avg ${num(avg7('restingHr'))} bpm`)],
+    ['HRV, last night', [num(latest('hrv')), 'ms'], withAge('hrv', `7-day avg ${num(avg7('hrv'))} ms`)],
+    ['Resting HR', [num(latest('restingHr')), 'bpm'], withAge('restingHr', `7-day avg ${num(avg7('restingHr'))} bpm`)],
     ['Sleep', hm(latest('sleepH')), withAge('sleepH', sleepScore == null ? '' : `Score ${num(sleepScore)}`)],
     batteryCard(latest('bbHigh'), withAge('bbHigh', `7-day avg ${num(avg7('bbHigh'))}`)),
   ]);
@@ -362,21 +366,43 @@ function insightsPanel() {
     ...weekDeltas(state.days).map((x) => {
       const tr = document.createElement('tr');
       const dir = Math.abs(x.pct) < 1 ? 'flat' : x.pct > 0 ? '▲ up' : '▼ down';
-      [`${x.label}${x.unit ? ` (${x.unit})` : ''}`, num(x.now, x.now < 100 ? 1 : 0), num(x.prev, x.prev < 100 ? 1 : 0), `${dir} ${Math.abs(x.pct).toFixed(1)}%`].forEach((v, i) => {
+      [`${x.label}${x.unit ? ` (${x.unit})` : ''}`, num(x.now, x.now < 100 ? 1 : 0), num(x.prev, x.prev < 100 ? 1 : 0)].forEach((v, i) => {
         const td = text(document.createElement('td'), v);
         if (i) td.className = 'num';
         tr.append(td);
       });
+      // Say whether the move is good or bad, in words as well as colour; skip it for small changes and for load.
+      const change = text(document.createElement('td'), `${dir} ${Math.abs(x.pct).toFixed(1)}%`);
+      change.className = 'num';
+      if (x.good && Math.abs(x.pct) >= 3) {
+        const better = Math.sign(x.pct) === x.good;
+        change.append(' ', Object.assign(text(document.createElement('span'), better ? 'better' : 'worse'), { className: better ? 'good' : 'bad' }));
+      }
+      tr.append(change);
       return tr;
     }),
   );
+  // Strongest relationship first and widest; weak ones step back.
+  const ranked = [...insights(state.days)].sort((a, b) => Math.abs(b.r ?? 0) - Math.abs(a.r ?? 0));
   $('insights').replaceChildren(
-    ...insights(state.days).map((i) => {
+    ...ranked.map((i) => {
       const card = document.createElement('div');
-      card.className = 'card insight';
+      card.className = `card insight${Math.abs(i.r ?? 0) < 0.2 ? ' weak' : ''}`;
+      const track = document.createElement('div');
+      track.className = 'dtrack';
+      if (i.r != null) {
+        const fill = document.createElement('div');
+        fill.className = 'dfill s1';
+        fill.style.width = `${Math.abs(i.r) * 50}%`;
+        fill.style[i.r > 0 ? 'left' : 'right'] = '50%';
+        track.append(fill);
+      }
+      track.setAttribute('role', 'img');
+      track.setAttribute('aria-label', i.r == null ? 'Not enough data' : `Relationship strength ${i.r.toFixed(2)} on a scale from minus 1 to 1`);
       card.append(
-        text(document.createElement('div'), `${i.xs} → ${i.ys}`),
+        Object.assign(text(document.createElement('div'), `${i.xs} → ${i.ys}`), { className: 'head' }),
         text(Object.assign(document.createElement('div'), { className: 'r' }), i.r == null ? 'r = —' : `r = ${i.r.toFixed(2)}`),
+        track,
         text(document.createElement('p'), i.text),
       );
       return card;
@@ -517,6 +543,19 @@ async function load() {
 }
 
 $('range').addEventListener('change', load);
+$('showpw').addEventListener('change', (e) => ($('pw').type = e.target.checked ? 'text' : 'password'));
+$('logout').addEventListener('click', async () => {
+  let ended = true;
+  try {
+    ended = (await fetch('/api/logout', { method: 'POST' })).ok;
+  } catch {
+    ended = false; // offline: the session cookie is HttpOnly, so only the server can end it
+  }
+  state = null;
+  wipeCache();
+  show('login');
+  if (!ended) text($('login-err'), "Signed out here, but couldn't reach the server to end the session. It will expire on its own.").hidden = false;
+});
 $('err-retry').addEventListener('click', load);
 $('notice-retry').addEventListener('click', load);
 $('login-form').addEventListener('submit', async (e) => {

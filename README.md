@@ -18,6 +18,10 @@ With no `GARMIN_API_KEY`, the app serves generated demo data and shows a "Demo d
 2. Add environment variables: `GARMIN_API_KEY`, `DASHBOARD_PASSWORD`, `SESSION_SECRET`.
 3. Deploy. The page is public but empty; all data comes from `/api/data`, which needs the login cookie.
 
+## Privacy
+
+The page is public but empty; all data comes from `/api/data`, which needs the login cookie. The last good payload per range is cached in this browser's local storage so a bad connection still shows something. **Sign out** (page footer) ends the session on the server and clears that cached copy. Anyone with access to your unlocked browser profile can read the cache until then.
+
 ## Garmin key
 
 Garmin Connect Web > Personal API Key > Create Key. The key is shown once and expires after the period you choose (30 days to 1 year); create a new one and update the Vercel variable when it expires. Access tokens last 24 hours and are renewed automatically.

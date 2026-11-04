@@ -10,6 +10,7 @@ target_fingerprint: "sha256:cd5c37ed986e2bf271b6874af10abdd2b0780e3b9bbc39c93f53
 target_path: /home/user/garmincompanion/public/index.html
 timestamp: 2026-11-04T09-33-02Z
 slug: public-index-html
+closed: true
 ---
 # Critique: Garmin Companion dashboard (public/index.html)
 

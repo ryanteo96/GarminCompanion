@@ -158,12 +158,13 @@ export function insights(days) {
 export function weekDeltas(days) {
   const recent = days.slice(-7);
   const before = days.slice(-28, -7);
+  // good: +1 when higher is better, -1 when lower is better, 0 when neither is (training load depends on your plan).
   return [
-    ['hrv', 'HRV', 'ms'], ['restingHr', 'Resting HR', 'bpm'], ['sleepH', 'Sleep', 'h'],
-    ['steps', 'Steps', 'per day'], ['stress', 'Stress', ''], ['load', 'Training load', 'per day'],
-  ].flatMap(([k, label, unit]) => {
+    ['hrv', 'HRV', 'ms', 1], ['restingHr', 'Resting HR', 'bpm', -1], ['sleepH', 'Sleep', 'h', 1],
+    ['steps', 'Steps', 'per day', 1], ['stress', 'Stress', '', -1], ['load', 'Training load', 'per day', 0],
+  ].flatMap(([k, label, unit, good]) => {
     const now = mean(recent.map((d) => d[k]));
     const prev = mean(before.map((d) => d[k]));
-    return now == null || prev == null || prev === 0 ? [] : [{ k, label, unit, now, prev, pct: ((now - prev) / prev) * 100 }];
+    return now == null || prev == null || prev === 0 ? [] : [{ k, label, unit, good, now, prev, pct: ((now - prev) / prev) * 100 }];
   });
 }
