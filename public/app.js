@@ -214,7 +214,9 @@ async function load() {
   show(true);
   if (!r.ok) return void text(status, `Couldn't load your data: ${j.error}`);
   state = { ...j, days: withLoad(j.days, j.activities) };
-  status.hidden = true;
+  const skipped = Object.values(j.skipped ?? {}).reduce((a, b) => a + b, 0);
+  status.hidden = !skipped;
+  if (skipped) text(status, `${skipped} Garmin records had no date and were left out.`);
   $('demo').hidden = !j.demo;
   text($('updated'), `Updated ${new Date(j.fetchedAt).toLocaleString()}`);
   select(tab);

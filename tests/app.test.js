@@ -25,6 +25,13 @@ test('normalize maps Garmin spec fields', () => {
   assert.deepEqual(out.activities[0].zones, [0, 600, 0, 0, 0]);
 });
 
+test('normalize skips records without a date instead of crashing', () => {
+  const out = normalize({ daily: [{ calendarDate: null }, { calendarDate: '2026-11-01' }], hrv: [{}], sleep: [null], acts: [{ activityId: 1, startTimeLocal: null }] });
+  assert.equal(out.days.length, 1);
+  assert.equal(out.activities.length, 0);
+  assert.deepEqual(out.skipped, { daily: 1, hrv: 1, sleep: 1, activities: 1 });
+});
+
 test('token exchange sends the ApiKey header and parses the access token', async () => {
   process.env.GARMIN_API_KEY = 'k123';
   const real = globalThis.fetch;
