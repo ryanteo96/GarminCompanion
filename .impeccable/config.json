@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/**"
+        ],
+        "createdAt": "2026-11-04T13:02:49.906Z",
+        "reason": "Agent: throwaway decision sketches for rejected directions; each deliberately uses its own type system, and none ships. DESIGN.md describes the shipped build only."
+      }
+    ]
+  }
+}
