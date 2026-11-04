@@ -1,5 +1,5 @@
 import { friendly } from './errors.js';
-import { explain, insights, loadSeries, mean, ratioLabel, readiness, weekDeltas, weekly, withLoad } from './stats.js';
+import { band, explain, insights, loadSeries, mean, ratioLabel, readiness, rolling, weekDeltas, weekly, withLoad } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
@@ -20,7 +20,9 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function kpis(id, items) {
   $(id).replaceChildren(
-    ...items.map(([label, value, sub, tag]) => {
+    ...items.map((item) => {
+      if (item instanceof Element) return item;
+      const [label, value, sub, tag] = item;
       const card = document.createElement('div');
       card.className = 'card kpi';
       for (const [cls, t] of [['label', label], ['value', value], ['sub', sub], ['tag', tag]]) {
@@ -36,6 +38,84 @@ const line = (label, data, color, dash = false) => ({
   pointRadius: data.length > 60 ? 0 : 2, borderDash: dash ? [6, 4] : [],
 });
 const bar = (label, data, color) => ({ label, data, backgroundColor: color, borderRadius: 2 });
+const alpha = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, '0'); // tokens are #rrggbb
+
+// Faint raw readings, a bold 7-day line, and optionally the shaded 28-day normal range behind them.
+function trend(values, color, name, withBand = false) {
+  const lines = [
+    { ...line(name, values, alpha(color, 0.5)), borderWidth: 1, pointRadius: 0 },
+    { ...line('7-day average', rolling(values), color), borderWidth: 3, pointRadius: 0 },
+  ];
+  if (!withBand) return lines;
+  const b = band(values);
+  const edge = { borderWidth: 0, pointRadius: 0, spanGaps: true, noTip: true };
+  return [
+    { label: '_low', data: b.map((x) => x?.lo ?? null), fill: false, ...edge },
+    { label: 'Your normal range', data: b.map((x) => x?.hi ?? null), fill: '-1', backgroundColor: alpha(css('--s2'), 0.22), swatch: 'rect', ...edge },
+    ...lines,
+  ];
+}
+
+function el(ns, tag, attrs = {}) {
+  const node = document.createElementNS(ns, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  return node;
+}
+
+// Body Battery as a battery: the fill is the day's peak.
+function batteryCard(value, sub) {
+  const SVG = 'http://www.w3.org/2000/svg';
+  const card = document.createElement('div');
+  card.className = 'card kpi';
+  const svg = el(SVG, 'svg', { viewBox: '0 0 44 22', class: 'battery', role: 'img', 'aria-label': value == null ? 'Body Battery peak unavailable' : `Body Battery peak ${value} out of 100` });
+  const pct = Math.max(0, Math.min(100, value ?? 0));
+  svg.append(
+    el(SVG, 'rect', { x: 1, y: 1, width: 38, height: 20, rx: 4, class: 'bat-shell' }),
+    el(SVG, 'rect', { x: 40, y: 7, width: 3, height: 8, rx: 1, class: 'bat-cap' }),
+    el(SVG, 'rect', { x: 3, y: 3, width: (34 * pct) / 100, height: 16, rx: 2, class: 'bat-fill' }),
+  );
+  const row = document.createElement('div');
+  row.className = 'valrow';
+  row.append(svg, text(Object.assign(document.createElement('div'), { className: 'value' }), num(value)));
+  card.append(
+    text(Object.assign(document.createElement('div'), { className: 'label' }), 'Body Battery peak'),
+    row,
+    text(Object.assign(document.createElement('div'), { className: 'sub' }), sub),
+  );
+  return card;
+}
+
+// Last night's stage totals as one proportional bar. Garmin's API gives totals and bed/wake times, not a per-minute timeline.
+const STAGES = [['deep', 'Deep', 'deepH'], ['rem', 'REM', 'remH'], ['light', 'Light', 'lightH'], ['awake', 'Awake', 'awakeH']];
+const clock12 = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+
+function night() {
+  const host = $('night');
+  const row = state.days.findLast((x) => x.sleepH != null);
+  host.hidden = !row;
+  if (!row) return;
+  const total = STAGES.reduce((t, [, , k]) => t + (row[k] ?? 0), 0);
+  text($('night-head'), `Last night, ${fmtDate(row.date)}: ${hm(row.sleepH)} asleep`);
+  const bar_ = $('nightbar');
+  const key = $('nightkey');
+  bar_.hidden = key.hidden = total <= 0;
+  bar_.replaceChildren();
+  key.replaceChildren();
+  if (total > 0) {
+    for (const [cls, name, k] of STAGES) {
+      if (!(row[k] > 0)) continue;
+      const seg = document.createElement('i');
+      seg.className = `stage-${cls}`;
+      seg.style.width = `${(row[k] / total) * 100}%`;
+      bar_.append(seg);
+      const li = document.createElement('li');
+      li.append(Object.assign(document.createElement('i'), { className: `stage-${cls}` }), text(document.createElement('span'), `${name} ${hm(row[k])} (${Math.round((row[k] / total) * 100)}%)`));
+      key.append(li);
+    }
+    bar_.setAttribute('aria-label', `Last night's sleep stages: ${STAGES.filter(([, , k]) => row[k] > 0).map(([, name, k]) => `${name} ${hm(row[k])}`).join(', ')}.`);
+  }
+  text($('night-times'), row.bedtime && row.wake ? `In bed ${clock12(row.bedtime)}, up ${clock12(row.wake)}.` : total > 0 ? '' : 'Stage detail is not available for this night.');
+}
 
 function describe(name, values, unit = '') {
   const v = values.filter((x) => x != null);
@@ -43,7 +123,7 @@ function describe(name, values, unit = '') {
   return `${name}: latest ${num(v.at(-1), 1)}${unit}, average ${num(mean(v), 1)}${unit}, range ${num(Math.min(...v), 1)} to ${num(Math.max(...v), 1)}${unit} over ${v.length} points.`;
 }
 
-function draw(id, type, labels, datasets, { stacked = false, summary, horizontal = false, whole = false } = {}) {
+function draw(id, type, labels, datasets, { stacked = false, summary, horizontal = false, whole = false, yRange = {} } = {}) {
   charts[id]?.destroy();
   const el = $(id);
   const host = el.parentElement;
@@ -68,10 +148,27 @@ function draw(id, type, labels, datasets, { stacked = false, summary, horizontal
       animation: reduced ? false : { duration: 300 },
       interaction: { mode: 'index', intersect: false },
       font: { family: '"Fira Sans", system-ui, sans-serif' },
-      plugins: { legend: { display: datasets.length > 1, labels: { color: mfg, boxWidth: 12 } } },
+      plugins: {
+        legend: {
+          display: datasets.filter((d) => !d.label.startsWith('_')).length > 1,
+          labels: {
+            color: mfg, usePointStyle: true, boxWidth: 14, boxHeight: 8,
+            // Lines get a line swatch (dashed stays dashed), bars and the range band a filled one.
+            generateLabels: (chart) => Chart.defaults.plugins.legend.labels.generateLabels(chart).filter((l) => !l.text.startsWith('_')).map((l) => {
+              const ds = chart.data.datasets[l.datasetIndex];
+              const isLine = (ds.type ?? type) === 'line' && ds.swatch !== 'rect';
+              return { ...l, pointStyle: isLine ? 'line' : 'rectRounded', lineDash: ds.borderDash ?? [], lineWidth: isLine ? 3 : 0, strokeStyle: isLine ? ds.borderColor : l.fillStyle };
+            }),
+          },
+        },
+        tooltip: {
+          filter: (item) => !item.dataset.noTip,
+          callbacks: { label: (c) => `${c.dataset.label}: ${Array.isArray(c.raw) ? c.raw.join(' to ') : c.formattedValue}` },
+        },
+      },
       scales: {
         x: { ...axis, grid: { display: horizontal, color: css('--border') } },
-        y: { ...axis, ticks: { color: mfg, precision: whole ? 0 : undefined }, grid: { display: !horizontal, color: css('--border') }, beginAtZero: type === 'bar' || horizontal },
+        y: { ...axis, ticks: { color: mfg, precision: whole ? 0 : undefined }, grid: { display: !horizontal, color: css('--border') }, beginAtZero: type === 'bar' || horizontal, ...yRange },
       },
     },
   });
@@ -139,14 +236,27 @@ function recovery() {
     ['HRV, last night', `${num(latest('hrv'))} ms`, `7-day avg ${num(avg7('hrv'))} ms`],
     ['Resting HR', `${num(latest('restingHr'))} bpm`, `7-day avg ${num(avg7('restingHr'))} bpm`],
     ['Sleep', hm(latest('sleepH')), sleepScore == null ? '' : `Score ${num(sleepScore)}`],
-    ['Body Battery peak', num(latest('bbHigh')), `7-day avg ${num(avg7('bbHigh'))}`],
+    batteryCard(latest('bbHigh'), `7-day avg ${num(avg7('bbHigh'))}`),
   ]);
-  const s1 = css('--s1'), s2 = css('--s2'), s3 = css('--s3'), s4 = css('--s4');
-  draw('c-hrv', 'line', dates, [line('Last night', col('hrv'), s1), line('Weekly avg', col('hrvWeekly'), s2, true)], { summary: describe('HRV', col('hrv'), ' ms'), whole: true });
-  draw('c-rhr', 'line', dates, [line('Resting HR', col('restingHr'), s1)], { summary: describe('Resting heart rate', col('restingHr'), ' bpm'), whole: true });
-  draw('c-sleep', 'bar', dates, [bar('Deep', col('deepH'), s4), bar('REM', col('remH'), s1), bar('Light', col('lightH'), s3), bar('Awake', col('awakeH'), s2)], { stacked: true, summary: describe('Total sleep', col('sleepH'), ' h') });
-  draw('c-bb', 'line', dates, [line('Daily high', col('bbHigh'), s1), line('Daily low', col('bbLow'), s2, true)], { summary: describe('Body Battery daily high', col('bbHigh')) });
+  const s1 = css('--s1');
+  draw('c-hrv', 'line', dates, trend(col('hrv'), s1, 'Last night', true), { summary: describe('HRV', col('hrv'), ' ms'), whole: true });
+  draw('c-rhr', 'line', dates, trend(col('restingHr'), s1, 'Resting HR', true), { summary: describe('Resting heart rate', col('restingHr'), ' bpm'), whole: true });
+  const range = d.map((x) => (x.bbLow != null && x.bbHigh != null ? [x.bbLow, x.bbHigh] : null));
+  draw('c-bb', 'bar', dates, [{ ...bar('Daily range', range, css('--bb')), borderSkipped: false }], { summary: describe('Body Battery daily high', col('bbHigh')), yRange: { min: 0, max: 100 } });
+  night();
+  sleepChart(d);
 }
+
+// Nightly bars for a month or less; weekly averages beyond that, where 90 slim bars read as texture.
+function sleepChart(d) {
+  const nightly = d.length <= 31;
+  const stage = (k) => (nightly ? d.map((x) => x[k]) : [...byWeek(d, k).values()]);
+  const labels = nightly ? d.map((x) => fmtDate(x.date)) : [...byWeek(d, 'sleepH').keys()].map(fmtDate);
+  text($('cap-sleep'), nightly ? 'Sleep stages, nightly (hours)' : 'Sleep stages, weekly average per night (hours)');
+  const seg = (name, k, token) => ({ ...bar(name, stage(k), css(token)), borderColor: css('--card'), borderWidth: 1 });
+  draw('c-sleep', 'bar', labels, [seg('Deep', 'deepH', '--sl-deep'), seg('REM', 'remH', '--sl-rem'), seg('Light', 'lightH', '--sl-light'), seg('Awake', 'awakeH', '--sl-awake')], { stacked: true, summary: describe('Total sleep', d.map((x) => x.sleepH), ' h') });
+}
+const byWeek = (d, k) => new Map(weekly(d, k, 'mean').map((x) => [x.week, x.v]));
 
 function training() {
   const d = state.days, ls = loadSeries(d), last = ls.at(-1);
@@ -166,7 +276,7 @@ function training() {
   const z = [0, 0, 0, 0, 0];
   for (const a of state.activities) if (a.date >= since(28)) a.zones.forEach((s, i) => (z[i] += s / 60));
   const names = ['Z1 Warm-up', 'Z2 Easy', 'Z3 Aerobic', 'Z4 Threshold', 'Z5 Maximum'];
-  draw('c-zones', 'bar', names, [bar('Minutes', z.map((m) => Math.round(m)), s1)], { horizontal: true, summary: `Minutes per heart-rate zone: ${names.map((n, i) => `${n} ${Math.round(z[i])}`).join(', ')}.` });
+  draw('c-zones', 'bar', names, [bar('Minutes', z.map((m) => Math.round(m)), ['--z1', '--z2', '--z3', '--z4', '--z5'].map(css))], { horizontal: true, summary: `Minutes per heart-rate zone: ${names.map((n, i) => `${n} ${Math.round(z[i])}`).join(', ')}.` });
 
   const body = $('acts').tBodies[0];
   body.replaceChildren(
@@ -194,10 +304,9 @@ function activity() {
     ['Average stress', num(latest('stress')), `7-day avg ${num(avg7('stress'))}`],
   ]);
   const s1 = css('--s1'), s2 = css('--s2');
-  draw('c-steps', 'bar', dates, [bar('Steps', col('steps'), s1), { ...line('7-day avg', roll, s2, true), type: 'line' }], { summary: describe('Daily steps', col('steps')) });
+  draw('c-steps', 'bar', dates, [bar('Steps', col('steps'), alpha(s1, 0.45)), { ...line('7-day average', roll, s1), type: 'line', borderWidth: 3, pointRadius: 0 }], { summary: describe('Daily steps', col('steps')) });
   draw('c-im', 'bar', im.map((x) => fmtDate(x.week)), [bar('Intensity minutes', im.map((x) => x.v), s1), { ...line('Goal', im.map(() => 150), s2, true), type: 'line', pointRadius: 0 }], { summary: describe('Weekly intensity minutes', im.map((x) => x.v)) });
-  draw('c-cal', 'line', dates, [line('Calories', col('calories'), s1)], { summary: describe('Calories burned', col('calories')) });
-  draw('c-stress', 'line', dates, [line('Average stress', col('stress'), s1)], { summary: describe('Average stress', col('stress')) });
+  draw('c-stress', 'line', dates, trend(col('stress'), s1, 'Average stress'), { summary: describe('Average stress', col('stress')), whole: true });
 }
 
 function insightsPanel() {

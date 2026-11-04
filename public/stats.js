@@ -97,6 +97,23 @@ export function loadSeries(days) {
 export const ratioLabel = (r) =>
   r == null ? 'Not enough history' : r < 0.8 ? 'Lighter than usual' : r <= 1.3 ? 'In your sweet spot' : r <= 1.5 ? 'Ramping up' : 'Spiking';
 
+// Trailing mean over the last `win` values; null until `min` readings exist.
+export function rolling(values, win = 7, min = 3) {
+  return values.map((_, i) => {
+    const w = values.slice(Math.max(0, i - win + 1), i + 1).filter((x) => x != null);
+    return w.length >= min ? mean(w) : null;
+  });
+}
+
+// "Your normal range": trailing 28-day mean +/- 1 SD, the same baseline readiness uses.
+export function band(values, win = 28) {
+  return values.map((_, i) => {
+    const w = values.slice(Math.max(0, i - win + 1), i + 1).filter((x) => x != null);
+    const s = sd(w);
+    return w.length >= 7 && s != null ? { lo: mean(w) - s, hi: mean(w) + s } : null;
+  });
+}
+
 export function weekly(days, key, agg = 'sum') {
   const g = new Map();
   for (const d of days) {

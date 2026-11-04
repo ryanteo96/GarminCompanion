@@ -92,8 +92,17 @@
         <div class="grid">
           <figure class="card"><figcaption>Heart rate variability (ms)</figcaption><div class="cv"><canvas id="c-hrv" role="img"></canvas></div></figure>
           <figure class="card"><figcaption>Resting heart rate (bpm)</figcaption><div class="cv"><canvas id="c-rhr" role="img"></canvas></div></figure>
-          <figure class="card"><figcaption>Sleep stages (hours)</figcaption><div class="cv"><canvas id="c-sleep" role="img"></canvas></div></figure>
-          <figure class="card"><figcaption>Body Battery, daily high and low</figcaption><div class="cv"><canvas id="c-bb" role="img"></canvas></div></figure>
+          <figure class="card"><figcaption>Body Battery, daily low to high</figcaption><div class="cv"><canvas id="c-bb" role="img"></canvas></div></figure>
+          <figure class="card span-all">
+            <figcaption id="cap-sleep">Sleep stages</figcaption>
+            <div id="night" class="night" hidden>
+              <p id="night-head" class="night-head"></p>
+              <div id="nightbar" class="nightbar" role="img"></div>
+              <ul id="nightkey" class="nightkey"></ul>
+              <p id="night-times" class="small muted"></p>
+            </div>
+            <div class="cv"><canvas id="c-sleep" role="img"></canvas></div>
+          </figure>
         </div>
       </section>
 
@@ -115,7 +124,6 @@
         <div class="grid">
           <figure class="card"><figcaption>Daily steps</figcaption><div class="cv"><canvas id="c-steps" role="img"></canvas></div></figure>
           <figure class="card"><figcaption>Weekly intensity minutes (goal 150)</figcaption><div class="cv"><canvas id="c-im" role="img"></canvas></div></figure>
-          <figure class="card"><figcaption>Calories burned</figcaption><div class="cv"><canvas id="c-cal" role="img"></canvas></div></figure>
           <figure class="card"><figcaption>Average stress</figcaption><div class="cv"><canvas id="c-stress" role="img"></canvas></div></figure>
         </div>
       </section>

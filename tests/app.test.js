@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { test } from 'node:test';
 import { authed, mintCookie, same } from '../lib/auth.js';
-import { addDays, normalize, parseToken, ranges, token } from '../lib/garmin.js';
+import { addDays, clock, normalize, parseToken, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
 import { friendly } from '../public/errors.js';
-import { corr, explain, insights, loadSeries, readiness, weekStart, withLoad } from '../public/stats.js';
+import { band, corr, explain, insights, loadSeries, readiness, rolling, weekStart, withLoad } from '../public/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
 
@@ -21,7 +21,7 @@ test('normalize maps Garmin spec fields', () => {
     sleep: [{ calendarDate: '2026-11-01', sleepTimeSeconds: 27000, deepSleepSeconds: 3600 }],
     acts: [{ activityId: 7, startTimeLocal: '2026-11-01 07:00:00', activityName: 'Run', activityType: { typeKey: 'running' }, duration: 1800, distance: 5000, activityTrainingLoad: 120, hrTimeInZone_2: 600 }],
   });
-  assert.deepEqual(out.days[0], { date: '2026-11-01', steps: 9000, calories: 2500, restingHr: 52, intensityMin: 20, stress: 30, bbHigh: 90, bbLow: 20, hrv: 55, hrvWeekly: 53, sleepH: 7.5, deepH: 1, remH: null, lightH: null, awakeH: null, sleepScore: null });
+  assert.deepEqual(out.days[0], { date: '2026-11-01', steps: 9000, calories: 2500, restingHr: 52, intensityMin: 20, stress: 30, bbHigh: 90, bbLow: 20, hrv: 55, hrvWeekly: 53, sleepH: 7.5, deepH: 1, remH: null, lightH: null, awakeH: null, sleepScore: null, bedtime: null, wake: null });
   assert.equal(out.activities[0].date, '2026-11-01');
   assert.equal(out.activities[0].km, 5);
   assert.deepEqual(out.activities[0].zones, [0, 600, 0, 0, 0]);
@@ -116,4 +116,23 @@ test('dev server returns 404 for a missing static file and keeps running', async
   } finally {
     child.kill();
   }
+});
+
+test('clock reads ISO strings as written and epoch millis as UTC wall time', () => {
+  assert.equal(clock('2026-11-03T23:14:00.0'), '23:14');
+  assert.equal(clock('2026-11-03 06:40:00'), '06:40');
+  assert.equal(clock(Date.UTC(2026, 10, 3, 23, 14)), '23:14');
+  assert.equal(clock(String(Date.UTC(2026, 10, 3, 6, 5))), '06:05');
+  assert.equal(clock(null), null);
+  assert.equal(clock('garbage'), null);
+});
+
+test('rolling mean and normal-range band', () => {
+  assert.deepEqual(rolling([1, 2, 3, 4], 2, 2), [null, 1.5, 2.5, 3.5]);
+  assert.deepEqual(rolling([null, null, 5], 7, 3), [null, null, null]);
+  const vals = Array.from({ length: 10 }, (_, i) => 50 + (i % 2) * 2); // 50,52,50,52...
+  const b = band(vals);
+  assert.equal(b[5], null, 'needs 7 readings');
+  assert.ok(b[9].lo < 51 && b[9].hi > 51 && b[9].hi - b[9].lo < 3);
+  assert.equal(band([null, 1, 2])[2], null);
 });

@@ -2,7 +2,9 @@
 :root {
   --bg: #f8fafc; --card: #ffffff; --fg: #1e3a8a; --mfg: #475569; --border: #dbeafe; --muted: #e9eef6;
   --primary: #1e40af; --on-primary: #ffffff; --accent-text: #b45309; --ring: #1e40af; --err: #dc2626;
-  --s1: #2563eb; --s2: #d97706; --s3: #0d9488; --s4: #7c3aed;
+  --s1: #2563eb; --s2: #d97706;
+  --sl-deep: #3730a3; --sl-rem: #a21caf; --sl-light: #0284c7; --sl-awake: #64748b;
+  --z1: #64748b; --z2: #2563eb; --z3: #15803d; --z4: #ea580c; --z5: #dc2626; --bb: #0d9488;
   --st-strained: #b91c1c; --st-below: #c2410c; --st-typical: #1e40af; --st-well: #15803d;
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
   --sans: "Fira Sans", system-ui, sans-serif; --mono: "Fira Code", ui-monospace, monospace;
@@ -11,7 +13,9 @@
   :root {
     --bg: #0b1220; --card: #111a2e; --fg: #e2e8f0; --mfg: #9fb0c8; --border: #22304f; --muted: #1a2540;
     --primary: #60a5fa; --on-primary: #0b1220; --accent-text: #fbbf24; --ring: #93c5fd; --err: #f87171;
-    --s1: #60a5fa; --s2: #fbbf24; --s3: #2dd4bf; --s4: #a78bfa;
+    --s1: #60a5fa; --s2: #fbbf24;
+    --sl-deep: #818cf8; --sl-rem: #e879f9; --sl-light: #7dd3fc; --sl-awake: #94a3b8;
+    --z1: #94a3b8; --z2: #60a5fa; --z3: #4ade80; --z4: #fb923c; --z5: #f87171; --bb: #2dd4bf;
     --st-strained: #f87171; --st-below: #fb923c; --st-typical: #93c5fd; --st-well: #4ade80;
   }
 }
@@ -47,7 +51,6 @@ figcaption, .cap { font-size: 0.875rem; font-weight: 600; color: var(--mfg); mar
 .kpi .tag { display: inline-block; margin-top: var(--sp-1); font-size: 0.75rem; font-weight: 600; color: var(--accent-text); }
 
 .tablewrap { overflow-x: auto; }
-@media (min-width: 900px) { .wide { grid-column: span 2; } }
 @media (max-width: 480px) { .tabs { padding: 0 var(--sp-2); } .tabs button { padding: 0 var(--sp-3); } #deltas th, #deltas td { white-space: normal; padding: var(--sp-2) var(--sp-1); } }
 table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 th, td { text-align: left; padding: var(--sp-2) var(--sp-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -109,3 +112,20 @@ tbody tr:hover { background: var(--muted); }
 .notice { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--muted); border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; }
 .btn.small { min-height: 44px; background: var(--card); color: var(--primary); }
 .empty { margin: 0; height: 100%; display: grid; place-items: center; text-align: center; }
+
+/* ---- Wearable vocabulary: Body Battery glyph, last-night sleep composition ---- */
+.wide, .span-all { grid-column: 1 / -1; }
+.kpi .valrow { display: flex; align-items: center; gap: var(--sp-3); }
+.battery { width: 44px; height: 22px; flex: none; }
+.bat-shell { fill: none; stroke: var(--mfg); stroke-width: 2; }
+.bat-cap { fill: var(--mfg); }
+.bat-fill { fill: var(--bb); }
+.night { margin: 0 0 var(--sp-4); }
+.night-head { margin: 0 0 var(--sp-2); font-weight: 600; }
+.nightbar { display: flex; gap: 2px; height: 28px; border-radius: 6px; overflow: hidden; }
+.nightbar i { display: block; height: 100%; min-width: 2px; }
+.nightkey { list-style: none; margin: var(--sp-2) 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: 0.875rem; }
+.nightkey li { display: flex; align-items: center; gap: var(--sp-2); }
+.nightkey i { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.stage-deep { background: var(--sl-deep); } .stage-rem { background: var(--sl-rem); }
+.stage-light { background: var(--sl-light); } .stage-awake { background: var(--sl-awake); }
