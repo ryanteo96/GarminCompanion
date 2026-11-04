@@ -5,7 +5,7 @@
 <style>
 :root{--g:#070d1f;--p:#0c1530;--c:#f1e9d6;--t:#e9e6dc;--m:#8e9bb8;--r:#e2564a;--l:rgba(142,155,184,.3)}
 html,body{margin:0;width:1440px;height:900px;overflow:hidden}
-body{font:400 14px/1.35 Hind,sans-serif;color:var(--t);color-scheme:dark;font-variant-numeric:tabular-nums;background:linear-gradient(rgba(142,155,184,.08) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,rgba(142,155,184,.08) 1px,transparent 1px) 0 0/48px 48px,var(--g)}
+body{font:400 14px/1.35 Hind,sans-serif;color:var(--t);color-scheme:dark;font-variant-numeric:tabular-nums;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M0 .5H48M.5 0V48' stroke='%238e9bb8' stroke-opacity='.08' fill='none'/%3E%3C/svg%3E") 0 0/48px 48px,var(--g)}
 header{height:76px;box-sizing:border-box;padding:0 24px;display:flex;align-items:flex-end;gap:40px;background:var(--p);border-bottom:1px solid var(--l)}
 .brand{padding-bottom:11px}.brand b{font:italic 500 28px/1 "EB Garamond",serif;color:var(--c)}
 .brand b:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 0 4px var(--p),0 0 0 5.5px var(--r);margin:0 16px 0 6px;vertical-align:3px}
@@ -34,6 +34,9 @@ tbody th{font:italic 500 19px "EB Garamond",serif;color:var(--c)}tbody th small{
 .sl{margin:8px 0 6px;font-size:14px;color:var(--m)}.sl b{font:italic 500 34px/1 "EB Garamond",serif;color:var(--c);margin-right:8px}
 .lg{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;margin:8px 0 10px;font-size:14px}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px}
 .ins{border-top:1px solid var(--l);padding-top:8px;font-size:13px;line-height:1.35}.ins b{color:var(--m);font-weight:500;margin-right:6px}
+h1,h2,h3,b,.big,span.n{line-height:1.3}
+button,select{line-height:1.3}
+svg text,input,label,small,i,u,em,time{line-height:1.3}
 </style></head><body>
 <header>
  <div class="brand"><b>Garmin Companion</b><small>Updated 06:42 · Latest data 4 Nov</small></div>
@@ -42,7 +45,7 @@ tbody th{font:italic 500 19px "EB Garamond",serif;color:var(--c)}tbody th small{
 </header>
 <main>
 <section class="v" aria-label="Verdict">
- <div><p class="cap">VERDICT · TUESDAY 4 NOV 2026, 06:42 · <span class="rd">CAUTION</span></p>
+ <div><p class="cap">VERDICT · WEDNESDAY 4 NOV 2026, 06:42 · <span class="rd">CAUTION</span></p>
   <h1>Recovered, but your load is spiking:<br>keep it moderate</h1>
   <p>Resting HR is low, HRV is high and sleep was long, compared with your own last 28 days.</p></div>
  <div><p class="cap">READINESS</p>
@@ -53,7 +56,7 @@ tbody th{font:italic 500 19px "EB Garamond",serif;color:var(--c)}tbody th small{
    <g fill="#8e9bb8"><rect y="16" width="94" height="8" opacity=".22"/><rect x="98" y="16" width="60" height="8" opacity=".38"/><rect x="162" y="16" width="60" height="8" opacity=".55"/></g>
    <rect x="226" y="16" width="94" height="8" fill="#f1e9d6"/><circle cx="262" cy="20" r="6" fill="#070d1f" stroke="#f1e9d6" stroke-width="2"/></svg></div>
  <div><p class="cap">TRAINING LOAD</p>
-  <h3>Training load ratio 1.62: spiking.</h3>
+  <h2>Training load ratio 1.62: spiking.</h2>
   <p>1,314 over the last 7 days, against 811 in a usual week.</p>
   <svg width="440" height="54" role="img" aria-label="Load ratio scale: 1.62 sits in the spiking zone, above 1.5">
    <g text-anchor="middle"><text x="110" y="11">0.8</text><text x="248" y="11">1.3</text><text x="303" y="11">1.5</text>

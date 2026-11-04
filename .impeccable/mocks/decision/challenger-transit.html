@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Garmin Companion · Recovery (Midnight Transit)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--g:#0b1530;--p:#101c3d;--ink:#e8eef7;--mute:#a9b6d0;--rule:rgba(232,238,247,.16);--s:#f0a81a;--h:#d52b36;--r:#2a5bd7;--b:#2e9e4f;--c:#ff7a2e;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;width:1440px;height:900px;overflow:hidden}
+body{background:var(--g);color:var(--ink);font:400 14px/1.35 Hind,sans-serif;font-variant-numeric:tabular-nums;display:grid;grid-template:56px 1fr/168px 1fr}
+header{grid-column:1/-1;display:flex;align-items:center;background:#08102a;border-bottom:1px solid var(--rule)}
+.brand{width:168px;padding-left:20px;font:600 17px Hind;letter-spacing:.01em;white-space:nowrap}
+.fresh{color:var(--mute);font-size:13px;margin-left:16px;flex:1}
+.ctl{display:flex;align-items:center;gap:10px;padding-right:20px}.ctl label{color:var(--mute);font-size:13px}
+select,button{font:500 14px Hind;color:var(--ink);background:var(--p);border:1px solid rgba(232,238,247,.38);border-radius:4px;height:34px;padding:0 14px}
+nav{background:#0d1938;border-right:1px solid var(--rule);padding-top:14px}
+nav a{display:block;padding:11px 20px;color:var(--mute);text-decoration:none;font-weight:500;font-size:15px}
+nav a[aria-current]{background:var(--p);color:var(--ink);font-weight:600;box-shadow:inset 3px 0 0 var(--ink)}
+main{padding:12px 16px;display:grid;grid-template:168px 1fr 176px/1fr 392px;gap:12px;min-height:0}
+.pn{background:var(--p);border:1px solid var(--rule);border-radius:6px;padding:12px 16px;min-height:0;position:relative}
+h2{margin:0 0 8px;font:600 12px/1.2 Hind;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.vd{grid-column:1/-1;display:grid;grid-template-columns:1fr 370px 400px;padding:0;border:1px solid var(--rule);background:color-mix(in srgb,var(--c) 10%,#101c3d)}
+.vd>div{padding:12px 20px}.vd>div+div{border-left:1px solid var(--rule)}
+.vd h1{margin:0 0 6px;font:600 26px/1.18 Hind;letter-spacing:-.012em}.vd p{margin:0;color:var(--mute);font-size:14px}
+.vd h2.t{color:var(--c)}
+.num{display:flex;align-items:baseline;gap:8px}.num b{font:600 64px/.95 Hind;letter-spacing:-.04em}.num span{color:var(--mute)}.num strong{font-size:16px;margin-left:6px}
+.zs{display:flex;gap:2px;position:relative;margin-top:12px}.zs div{min-width:0}.zs i{display:block;height:10px;background:rgba(232,238,247,.2)}
+.zs .on i{background:var(--ink)}.zs .on.c i{background:var(--c)}.zs span{font-size:12px;color:var(--mute);white-space:nowrap}.zs .on span{color:var(--ink);font-weight:600}
+.mk{position:absolute;top:-4px;width:3px;height:18px;background:var(--ink);box-shadow:0 0 0 2px var(--p);border-radius:1px}
+.ld{display:flex;gap:14px;align-items:flex-end;margin-top:2px}.ld p{flex:1;margin:0;color:var(--mute)}.ld svg{flex:none}
+.ld+.zs{margin-top:8px}
+.gh{display:flex;justify-content:space-between;align-items:baseline}.gh small{color:var(--mute);font-size:13px}
+svg text{font:500 12px Hind;fill:var(--mute)}svg .d text{font:600 13px Hind;fill:var(--ink)}
+.l use{fill:none;stroke-width:6;stroke-linejoin:round}.rg{fill:var(--ink);stroke:var(--g);stroke-width:2}.bl{fill:none;stroke:var(--ink);stroke-width:1.5;opacity:.55}
+.bd text{font:600 12px Hind}
+.key{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;margin-top:6px}.key span{display:flex;align-items:center;gap:7px}
+.key i{width:26px;height:6px;border-radius:3px}.key u{width:16px;height:16px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px var(--p),0 0 0 3.5px rgba(232,238,247,.55)}
+table{border-collapse:collapse;width:100%}
+th{font:600 12px Hind;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-align:left;padding:5px 6px;border-bottom:1px solid var(--rule)}
+td{padding:6px;border-bottom:1px solid rgba(232,238,247,.09)}.n{text-align:right}th.n{text-align:right}
+td small{color:var(--mute);font-size:12px}
+.dt td{padding:3px 6px;height:38px;line-height:1.2}.dt td{white-space:nowrap}.dt td.n{font-size:16px;font-weight:600}.dt td.n small{font-weight:400}
+.pill{display:inline-block;font:600 12px/1 Hind;letter-spacing:.03em;padding:5px 9px;border-radius:10px}
+.ix{list-style:none;margin:0;padding:0}.ix li{display:flex;gap:8px;align-items:center;font-size:13px;padding:2px 0}.ix time{width:44px;font-weight:600}
+.ix b{display:flex;gap:2px;width:50px}.ix b i{width:10px;height:10px;border-radius:50%}
+.in{margin-top:6px;padding:6px 10px;border:1px solid var(--rule);border-radius:4px;font-size:14px}.in small{display:block;color:var(--mute);font:600 12px Hind;letter-spacing:.1em;text-transform:uppercase}
+.sl{display:flex;justify-content:space-between;align-items:flex-end}.sl b{font:600 38px/1 Hind;letter-spacing:-.03em}.sl span{color:var(--mute);font-size:13px;text-align:right}
+.bar{display:flex;height:18px;margin:12px 0 6px;gap:2px;position:relative}.bar i{display:block}
+.st{display:flex;gap:2px;font-size:12px;color:var(--mute);line-height:1.25}.st div{white-space:nowrap}.st b{display:block;color:var(--ink);font-weight:600;font-size:13px}
+.ld2{display:inline-block;height:8px;background:var(--c);border-radius:2px;margin-left:8px;vertical-align:middle}
+</style></head><body>
+<header><div class="brand">Garmin Companion</div><div class="fresh">Updated 06:42 · Latest data 4 Nov</div>
+<div class="ctl"><label for="rg">Chart range</label><select id="rg"><option>14 days</option><option>30 days</option><option selected>90 days</option></select><button>Refresh</button><button>Sign out</button></div></header>
+<nav aria-label="Main"><a href="#" aria-current="page">Recovery</a><a href="#">Training</a><a href="#">Activity</a><a href="#">Insights</a></nav>
+<main>
+<section class="pn vd" aria-label="Verdict">
+<div><h2 class="t">Today's call · 4 Nov, 06:42</h2><h1>Recovered, but your load is spiking: keep it moderate</h1><p>Resting HR is low, HRV is high and sleep was long, compared with your own last 28 days.</p></div>
+<div><h2>Readiness</h2><div class="num"><b>82</b><span>/ 100</span><strong>Well recovered</strong></div>
+<div class="zs"><div style="flex:28"><i></i><span>strained</span></div><div style="flex:24"><i></i><span>below usual</span></div><div style="flex:20"><i></i><span>typical</span></div><div class="on" style="flex:28"><i></i><span>well recovered</span></div><em class="mk" style="left:83%"></em></div></div>
+<div><h2>Training load</h2><strong style="font-size:16px">Training load ratio 1.62: spiking.</strong><div class="ld"><p>1,314 over the last 7 days, against 811 in a usual week.</p>
+<svg width="104" height="52" viewBox="0 0 104 52" aria-label="Weekly load, last 90 days, spiking at the right edge"><g fill="#a9b6d0" opacity=".6"><rect x="0" y="26" width="5" height="10"/><rect x="7" y="25" width="5" height="11"/><rect x="14" y="21" width="5" height="15"/><rect x="21" y="27" width="5" height="9"/><rect x="28" y="23" width="5" height="13"/><rect x="35" y="20" width="5" height="16"/><rect x="42" y="25" width="5" height="11"/><rect x="49" y="22" width="5" height="14"/><rect x="56" y="25" width="5" height="11"/><rect x="63" y="20" width="5" height="16"/><rect x="70" y="24" width="5" height="12"/><rect x="77" y="21" width="5" height="15"/></g><rect x="85" y="0" width="7" height="36" fill="#ff7a2e"/><text x="0" y="50">Weekly, 90 days</text></svg></div>
+<div class="zs"><div style="flex:1"><i></i><span>lighter</span></div><div style="flex:1"><i></i><span>sweet spot</span></div><div style="flex:1"><i></i><span>ramping up</span></div><div class="on c" style="flex:1"><i></i><span>spiking</span></div><em class="mk" style="left:81%"></em></div></div>
+</section>
+
+<section class="pn" aria-label="Recovery network">
+<div class="gh"><h2>Recovery network · last 14 days, 22 Oct to 4 Nov</h2><small>Height = distance from your usual, better is up. Resting HR drawn inverted.</small></div>
+<svg width="802" height="340" viewBox="0 0 802 340" role="img" aria-label="Transit diagram of HRV, resting HR, sleep and Body Battery over 14 days with interchanges on 25 Oct, 31 Oct, 1 Nov and 4 Nov">
+<defs><filter id="g" x="-5%" y="-30%" width="110%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
+<path id="S" d="M76 109H88H93l10 -10H138H143l10 10H188H193l11 -11v-9H238H243l10 10H288H293l10 10H338H343l10 -10H388H393l10 10H438H443l10 10H488H493l11 11v29H538H543l11 11v59H588H593l11 -11v-49H638H643l11 -11v-49H688H693l11 -11v-29H738"/>
+<path id="H" d="M76 155H88H93l10 -10H138H143l10 10H188H193l18 -18v-42H238H243l18 18v32H288H293l10 10H338H343l18 -18v-2H388H393l10 10H438H443l18 18v2H488H493l18 18v52H538H588H593l18 -18v-12H638H643l18 -18v-42H688H693l18 -18v-52H738"/>
+<path id="R" d="M76 201H88H138H143l10 10H188H193l10 -10H238H243l10 -10H288H293l10 10H338H343l10 -10H388H393l10 10H438H488H493l25 25v15H538H588H593l10 -10H638H643l25 -25v-15H688H693l25 -25v-85H738"/>
+<path id="B" d="M76 247H88H93l10 10H138H143l10 -10H188H238H288H293l10 -10H338H343l10 -10H388H438H488H493l20 -20H538H543l32 32v38H588H593l20 -20H638H643l20 -20H688H693l32 -32v-118H738"/></defs>
+<path d="M88 44V296M138 44V296M188 44V296M238 44V296M288 44V296M338 44V296M388 44V296M438 44V296M488 44V296M538 44V296M588 44V296M638 44V296M688 44V296M738 44V296" stroke="#e8eef7" stroke-opacity=".08"/>
+<path d="M76 178H766" stroke="#e8eef7" stroke-opacity=".45" stroke-dasharray="3 5"/>
+<path d="M488 28V296M588 28V296M688 28V296" stroke="#e8eef7" stroke-opacity=".3" stroke-dasharray="2 4"/>
+<g fill="#101c3d" stroke="#e8eef7" stroke-opacity=".7"><rect x="471" y="8" width="34" height="20" rx="3"/><rect x="571" y="8" width="34" height="20" rx="3"/><rect x="671" y="8" width="34" height="20" rx="3"/></g>
+<g text-anchor="middle" class="d"><text x="488" y="23">118</text><text x="588" y="23">172</text><text x="688" y="23">184</text></g><text x="0" y="23">Session load</text>
+<g class="l"><use href="#B" stroke="#2e9e4f"/><use href="#S" stroke="#f0a81a"/><use href="#R" stroke="#2a5bd7"/><use href="#H" stroke="#e0313b" stroke-width="13" opacity=".45" filter="url(#g)"/><use href="#H" stroke="#e0313b"/><use href="#H" stroke="#ff9ca2" stroke-width="1.5" opacity=".6"/></g>
+<path d="M88 103v12M88 149v12M88 195v12M88 241v12M138 93v12M138 139v12M138 195v12M138 251v12M188 103v12M188 149v12M188 205v12M188 241v12M238 195v12M238 241v12M288 93v12M288 139v12M288 185v12M288 241v12M338 103v12M338 149v12M338 195v12M338 231v12M388 93v12M388 129v12M388 185v12M388 221v12M438 103v12M438 139v12M438 195v12M438 221v12M488 113v12M488 159v12M488 195v12M488 221v12M538 153v12M538 201v12M588 271v12M638 163v12M638 199v12M638 225v12M638 251v12M688 103v12M688 139v12M688 185v12M688 231v12" stroke="#e8eef7" stroke-width="2.5"/>
+<g><circle cx="238" cy="92" r="14" class="bl"/><circle cx="238" cy="92" r="10" class="rg"/><circle cx="238" cy="89" r="3" fill="#f0a81a"/><circle cx="238" cy="95" r="3" fill="#e0313b"/></g>
+<g><circle cx="538" cy="238" r="14" class="bl"/><circle cx="538" cy="238" r="10" class="rg"/><circle cx="538" cy="235" r="3" fill="#e0313b"/><circle cx="538" cy="241" r="3" fill="#2a5bd7"/></g>
+<g><circle cx="588" cy="235" r="16.5" class="bl"/><circle cx="588" cy="235" r="12.5" class="rg"/><circle cx="588" cy="229" r="3" fill="#f0a81a"/><circle cx="588" cy="235" r="3" fill="#e0313b"/><circle cx="588" cy="241" r="3" fill="#2a5bd7"/></g>
+<g><circle cx="738" cy="78" r="19.5" class="bl"/><circle cx="738" cy="78" r="15.5" class="rg"/><circle cx="738" cy="69" r="3" fill="#f0a81a"/><circle cx="738" cy="75" r="3" fill="#e0313b"/><circle cx="738" cy="81" r="3" fill="#2a5bd7"/><circle cx="738" cy="87" r="3" fill="#2e9e4f"/></g>
+<g class="bd"><rect x="0" y="99" width="80" height="20" rx="10" fill="#f0a81a"/><rect x="0" y="145" width="80" height="20" rx="10" fill="#d52b36"/><rect x="0" y="191" width="80" height="20" rx="10" fill="#2a5bd7"/><rect x="0" y="237" width="80" height="20" rx="10" fill="#2e9e4f"/>
+<g text-anchor="middle"><text x="40" y="113" fill="#0b1530" style="fill:#0b1530">Sleep</text><text x="40" y="159" style="fill:#fff">HRV</text><text x="40" y="205" style="fill:#fff">Resting HR</text><text x="40" y="251" style="fill:#0b1530">Body Battery</text></g></g>
+<text x="760" y="48" text-anchor="end" style="fill:#e8eef7;font-weight:600">Today: all four better</text>
+<text x="800" y="86" text-anchor="end">better</text><text x="800" y="182" text-anchor="end">usual</text><text x="800" y="280" text-anchor="end">worse</text>
+<g class="d" text-anchor="middle"><text x="88" y="318">22</text><text x="138" y="318">23</text><text x="188" y="318">24</text><text x="238" y="318">25</text><text x="288" y="318">26</text><text x="338" y="318">27</text><text x="388" y="318">28</text><text x="438" y="318">29</text><text x="488" y="318">30</text><text x="538" y="318">31</text><text x="588" y="318">1</text><text x="638" y="318">2</text><text x="688" y="318">3</text><text x="738" y="318">4</text></g>
+<g text-anchor="middle"><text x="88" y="334">Oct</text><text x="588" y="334">Nov</text><text x="738" y="334" style="fill:#e8eef7;font-weight:600">today</text></g></svg>
+<div class="key"><span><i style="background:var(--h)"></i>HRV (ms)</span><span><i style="background:var(--r)"></i>Resting HR (bpm)</span><span><i style="background:var(--s)"></i>Sleep (hours)</span><span><i style="background:var(--b)"></i>Body Battery (peak)</span><span><u></u>Interchange: two or more lines moved together</span></div>
+<p style="margin:10px 0 0;font-size:13px;color:var(--mute)">Read it like a metro map: each tick is a day, each line is a signal, and a ring marks a day when two or more lines moved the same way.</p>
+</section>
+
+<section class="pn" aria-label="Drivers">
+<h2>Drivers against your usual (last 28 days)</h2>
+<table class="dt"><thead><tr><th>Line colour</th><th class="n">Today</th><th class="n">Usual</th><th class="n">Change</th></tr></thead><tbody>
+<tr><td><span class="pill" style="background:var(--h);color:#fff">HRV</span></td><td class="n">66 <small>ms</small></td><td class="n">50 <small>ms</small></td><td class="n">+16 ms<br><small>better than usual</small></td></tr>
+<tr><td><span class="pill" style="background:var(--r);color:#fff">Resting HR</span></td><td class="n">49 <small>bpm</small></td><td class="n">54 <small>bpm</small></td><td class="n">-5 bpm<br><small>better than usual</small></td></tr>
+<tr><td><span class="pill" style="background:var(--s);color:#0b1530">Sleep</span></td><td class="n">8h 54m</td><td class="n">7h 06m</td><td class="n">+1h 48m<br><small>better than usual</small></td></tr>
+<tr><td><span class="pill" style="background:var(--b);color:#0b1530">Body Battery</span></td><td class="n">99</td><td class="n">79</td><td class="n">+20<br><small>better than usual</small></td></tr></tbody></table>
+<h2 style="margin-top:12px">Interchange days</h2>
+<ul class="ix"><li><time>4 Nov</time><b><i style="background:var(--s)"></i><i style="background:var(--h)"></i><i style="background:var(--r)"></i><i style="background:var(--b)"></i></b>All four better than usual</li>
+<li><time>1 Nov</time><b><i style="background:var(--s)"></i><i style="background:var(--h)"></i><i style="background:var(--r)"></i></b>Sleep, HRV, resting HR all worse</li>
+<li><time>31 Oct</time><b><i style="background:var(--h)"></i><i style="background:var(--r)"></i></b>HRV, resting HR worse after intervals</li>
+<li><time>25 Oct</time><b><i style="background:var(--s)"></i><i style="background:var(--h)"></i></b>Sleep and HRV better together</li></ul>
+<div class="in"><small>Pattern</small>Longer sleep went with higher HRV that night (r = 0.54, moderate)</div>
+</section>
+
+<section class="pn" aria-label="Last three sessions">
+<h2>Last three sessions</h2>
+<table><thead><tr><th>Date</th><th>Session</th><th>Sport</th><th class="n">Duration</th><th class="n">Distance</th><th class="n">Avg HR</th><th>Load</th></tr></thead><tbody>
+<tr><td>3 Nov</td><td><strong>Long run</strong></td><td>running</td><td class="n">91 min</td><td class="n">15.5 km</td><td class="n">158 bpm</td><td>184<span class="ld2" style="width:92px"></span></td></tr>
+<tr><td>1 Nov</td><td><strong>Tempo</strong></td><td>running</td><td class="n">64 min</td><td class="n">11.0 km</td><td class="n">162 bpm</td><td>172<span class="ld2" style="width:86px"></span></td></tr>
+<tr><td>30 Oct</td><td><strong>Intervals</strong></td><td>running</td><td class="n">69 min</td><td class="n">11.7 km</td><td class="n">150 bpm</td><td>118<span class="ld2" style="width:59px"></span></td></tr></tbody></table>
+</section>
+
+<section class="pn" aria-label="Last night">
+<h2>Last night · 4 Nov</h2>
+<div class="sl"><b>8h 54m <span style="font-size:14px;font-weight:400">asleep</span></b><span>In bed 10:41 PM<br>Up 7:35 AM · usual 7h 06m</span></div>
+<div class="bar"><i style="flex:94;background:#f0a81a"></i><i style="flex:126;background:#b9811a"></i><i style="flex:280;background:#7a5a22"></i><i style="flex:34;border:1px dashed var(--mute)"></i></div>
+<div class="st"><div style="flex:94"><b>Deep</b>1h 34m<br>18%</div><div style="flex:126"><b>REM</b>2h 06m<br>24%</div><div style="flex:280"><b>Light</b>4h 40m<br>52%</div><div style="flex:34;text-align:right;margin-left:-60px"><b>Awake</b>0h 34m<br>6%</div></div>
+</section>
+</main></body></html>
