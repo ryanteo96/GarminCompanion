@@ -173,3 +173,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 input, select { caret-color: var(--primary); accent-color: var(--primary); }
 .tabs, .tablewrap { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 table, .kpi .value, .score-n { font-variant-numeric: tabular-nums; }
+
+.refresh { font: 500 0.875rem var(--sans); color: var(--primary); background: none; border: 0; padding: 0 var(--sp-2); min-height: 44px; margin-block: -10px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.refresh:hover { color: var(--fg); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

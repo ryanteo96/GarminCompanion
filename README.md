@@ -20,7 +20,7 @@ With no `GARMIN_API_KEY`, the app serves generated demo data and shows a "Demo d
 
 ## Privacy
 
-The page is public but empty; all data comes from `/api/data`, which needs the login cookie. The last good payload per range is cached in this browser's local storage so a bad connection still shows something. **Sign out** (page footer) ends the session on the server and clears that cached copy. Anyone with access to your unlocked browser profile can read the cache until then.
+The page is public but empty; all data comes from `/api/data`, which needs the login cookie. The last good payload per range is cached in this browser's local storage so a bad connection still shows something. **Sign out** (page footer) ends the session on the server, clears that cached copy, and asks the browser to clear its HTTP cache and storage (`Clear-Site-Data`, honoured over HTTPS). Data responses are sent `no-store` and fetched with `cache: 'no-store'`, so a reload or new tab after signing out cannot show the dashboard from the browser cache. **Refresh** (header) always asks the server for fresh data. Anyone with access to your unlocked browser profile can read the cache until then.
 
 ## Garmin key
 

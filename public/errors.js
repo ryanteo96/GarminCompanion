@@ -1,6 +1,7 @@
 // Plain-language copy for load failures. status 0 means the request never reached the server.
 export function friendly({ status, message }) {
   const m = String(message ?? '');
+  if (status === 'empty') return ['Garmin returned no data for this range', 'Try a longer range, or check that your watch has synced.'];
   if (status === 'timeout') return ['This is taking too long', 'The server did not answer in time. Try again in a moment.'];
   if (status === 0) return ["Can't reach the dashboard", 'Check your connection, then try again.'];
   if (/\b429\b/.test(m)) return ['Garmin is limiting requests right now', 'Wait a minute, then try again.'];

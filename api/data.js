@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const demo = !process.env.GARMIN_API_KEY;
     if (!demo && q.has('debug')) return send(res, 200, shape(await fetchRaw(days, today)));
     const data = demo ? sample(days, today) : await fetchAll(days, today);
-    send(res, 200, { demo, fetchedAt: new Date().toISOString(), ...data }, { 'Cache-Control': 'private, max-age=300' });
+    send(res, 200, { demo, fetchedAt: new Date().toISOString(), ...data }, { 'Cache-Control': 'private, no-store' });
   } catch (e) {
     send(res, 502, { error: e.message });
   }

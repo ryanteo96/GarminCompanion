@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { authed, mintCookie, same } from '../lib/auth.js';
 import { addDays, clock, normalize, parseToken, pickToday, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
+import data from '../api/data.js';
 import logout from '../api/logout.js';
 import { friendly } from '../public/errors.js';
 import { ago } from '../public/time.js';
@@ -189,4 +190,44 @@ test('weekDeltas says which direction is good', () => {
   assert.equal(by.load.good, 0);
   assert.ok(by.hrv.pct > 15 && by.restingHr.pct > 8);
   assert.equal(by.steps, undefined, 'metrics with no data are left out');
+});
+
+const call = async (handler, req) => {
+  const out = { headers: {} };
+  await handler(req, { setHeader: (k, v) => (out.headers[k] = v), end: (b) => (out.body = b), set statusCode(v) { out.status = v; } });
+  return out;
+};
+
+test('data responses are never cacheable, whether authorised or not', async () => {
+  const saved = process.env.GARMIN_API_KEY;
+  delete process.env.GARMIN_API_KEY; // demo mode
+  try {
+    const ok = await call(data, { url: '/api/data?days=7', headers: { cookie: `gc=${mintCookie()}` } });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.headers['Cache-Control'], 'private, no-store', 'a max-age here kept the dashboard readable after sign out');
+    const denied = await call(data, { url: '/api/data?days=7', headers: {} });
+    assert.equal(denied.status, 401);
+    assert.match(denied.headers['Cache-Control'], /no-store/);
+  } finally {
+    if (saved !== undefined) process.env.GARMIN_API_KEY = saved;
+  }
+});
+
+test('logout also tells the browser to clear its cache and storage', async () => {
+  const out = await call(logout, { method: 'POST', headers: {} });
+  assert.equal(out.headers['Clear-Site-Data'], '"cache", "storage"');
+});
+
+test('empty-result message exists', () => {
+  assert.match(friendly({ status: 'empty' })[0], /no data for this range/);
+});
+
+test('correlations show no number below 14 overlapping days', () => {
+  const { days, activities } = sample(60, '2026-11-04');
+  const full = insights(withLoad(days, activities));
+  assert.ok(full.every((i) => i.r != null), 'plenty of days: every card has an r');
+  const thin = insights(withLoad(days.slice(-4), activities));
+  assert.ok(thin.every((i) => i.r === null && /Not enough/.test(i.text)), 'four days: r is withheld, not 1.00');
+  const edge = insights(withLoad(days.slice(-15), activities)).find((i) => i.lag === 0);
+  assert.ok(edge.n >= 14 ? edge.r != null : edge.r === null, 'the threshold follows n');
 });

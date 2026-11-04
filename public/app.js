@@ -16,6 +16,7 @@ const latest = (key) => state.days.findLast((d) => d[key] != null)?.[key] ?? nul
 const avg7 = (key) => mean(state.days.slice(-7).map((d) => d[key]));
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const localToday = () => ymd(new Date());
+const fmtStamp = (ts) => new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const lastRow = (key) => state.days.findLast((d) => d[key] != null);
 // Most recent day Garmin reported anything for; readings older than this are labelled with their own date.
 const newest = () => state.days.findLast((d) => ['steps', 'hrv', 'sleepH', 'restingHr'].some((k) => d[k] != null))?.date;
@@ -360,10 +361,19 @@ function activity() {
   draw('c-stress', 'line', dates, trend(col('stress'), s1, 'Average stress'), { summary: describe('Average stress', col('stress')), whole: true });
 }
 
+const emptyRow = (cols, msg) => {
+  const tr = document.createElement('tr');
+  tr.append(Object.assign(text(document.createElement('td'), msg), { colSpan: cols, className: 'muted' }));
+  return tr;
+};
+
 function insightsPanel() {
-  text($('deltas-h'), `Last 7 days vs the 21 days before (through ${fmtDate(newest())})`);
+  const through = newest();
+  text($('deltas-h'), `Last 7 days vs the 21 days before${through ? ` (through ${fmtDate(through)})` : ''}`);
+  const deltas = weekDeltas(state.days);
   $('deltas').tBodies[0].replaceChildren(
-    ...weekDeltas(state.days).map((x) => {
+    ...(deltas.length ? [] : [emptyRow(4, 'Not enough history yet for a weekly comparison. It needs about a week of data plus earlier days to compare against.')]),
+    ...deltas.map((x) => {
       const tr = document.createElement('tr');
       const dir = Math.abs(x.pct) < 1 ? 'flat' : x.pct > 0 ? '▲ up' : '▼ down';
       [`${x.label}${x.unit ? ` (${x.unit})` : ''}`, num(x.now, x.now < 100 ? 1 : 0), num(x.prev, x.prev < 100 ? 1 : 0)].forEach((v, i) => {
@@ -388,21 +398,22 @@ function insightsPanel() {
     ...ranked.map((i) => {
       const card = document.createElement('div');
       card.className = `card insight${Math.abs(i.r ?? 0) < 0.2 ? ' weak' : ''}`;
-      const track = document.createElement('div');
-      track.className = 'dtrack';
+      let track = null;
       if (i.r != null) {
+        track = document.createElement('div');
+        track.className = 'dtrack';
         const fill = document.createElement('div');
         fill.className = 'dfill s1';
         fill.style.width = `${Math.abs(i.r) * 50}%`;
         fill.style[i.r > 0 ? 'left' : 'right'] = '50%';
         track.append(fill);
+        track.setAttribute('role', 'img');
+        track.setAttribute('aria-label', `Relationship strength ${i.r.toFixed(2)} on a scale from minus 1 to 1`);
       }
-      track.setAttribute('role', 'img');
-      track.setAttribute('aria-label', i.r == null ? 'Not enough data' : `Relationship strength ${i.r.toFixed(2)} on a scale from minus 1 to 1`);
       card.append(
         Object.assign(text(document.createElement('div'), `${i.xs} → ${i.ys}`), { className: 'head' }),
         text(Object.assign(document.createElement('div'), { className: 'r' }), i.r == null ? 'r = —' : `r = ${i.r.toFixed(2)}`),
-        track,
+        ...(track ? [track] : []),
         text(document.createElement('p'), i.text),
       );
       return card;
@@ -463,6 +474,9 @@ function show(view) {
   for (const v of VIEWS) $(v).hidden = v !== view;
   if (view === 'login') $('pw').focus();
   if (view === 'error') $('err-retry').focus();
+  // The login or error card just disappeared, so focus would fall to <body>; land on the selected tab instead.
+  const a = document.activeElement;
+  if (view === 'app' && (!a || a === document.body || !a.offsetParent)) $(`t-${tab}`).focus({ preventScroll: true });
 }
 
 function notify(msg, retry = false) {
@@ -482,8 +496,9 @@ let fresh = null;
 function showFresh() {
   if (!fresh) return;
   const u = $('updated');
-  text(u, [`${fresh.label} ${ago(fresh.ts)}`, `Latest data ${fmtDate(fresh.through)}`, fresh.behind && 'nothing for today yet'].filter(Boolean).join(' · '));
-  u.title = new Date(fresh.ts).toLocaleString();
+  // Keep the line short: the hero says which day it is based on and the cards say "From Nov 3", so the exact data date lives in the tooltip.
+  text(u, [`${fresh.label} ${ago(fresh.ts)}`, fresh.behind && 'nothing for today yet'].filter(Boolean).join(' · '));
+  u.title = `${new Date(fresh.ts).toLocaleString()}${fresh.through ? `. Latest data: ${fmtDate(fresh.through)}.` : ''}`;
 }
 setInterval(showFresh, 60000);
 
@@ -493,7 +508,7 @@ async function fetchData(days) {
   const ctl = (inflight = new AbortController());
   const timer = setTimeout(() => ctl.abort('timeout'), 25000);
   try {
-    const r = await fetch(`/api/data?days=${days}&today=${localToday()}`, { signal: ctl.signal });
+    const r = await fetch(`/api/data?days=${days}&today=${localToday()}`, { signal: ctl.signal, cache: 'no-store' });
     if (r.status === 401) return (await r.text(), { unauthorized: true });
     const j = await r.json().catch(() => ({}));
     return r.ok ? { j } : { err: { status: r.status, message: j.error ?? `HTTP ${r.status}` } };
@@ -511,27 +526,40 @@ function apply(j, stale) {
   const skipped = Object.values(j.skipped ?? {}).reduce((a, b) => a + b, 0);
   if (stale) {
     const [title] = friendly(stale.err);
-    notify(`Showing data saved ${new Date(stale.savedAt).toLocaleString()}. ${title}.`, true);
+    notify(`Showing data saved ${fmtStamp(stale.savedAt)}. ${title}.`, true);
   } else {
     notify(skipped ? `${skipped} Garmin records had no date and were left out.` : '');
   }
   $('demo').hidden = !j.demo;
   const through = newest();
-  fresh = { ...(stale ? { ts: stale.savedAt, label: 'Last synced' } : { ts: Date.parse(j.fetchedAt), label: 'Updated' }), through, behind: through < localToday() };
+  fresh = { ...(stale ? { ts: stale.savedAt, label: 'Last synced' } : { ts: Date.parse(j.fetchedAt), label: 'Updated' }), through, behind: !through || through < localToday() };
   showFresh();
   select(tab);
 }
 
+let loading = 0;
 async function load() {
+  $('refresh').disabled = ++loading > 0;
+  try {
+    await loadOnce();
+  } finally {
+    $('refresh').disabled = --loading > 0;
+  }
+}
+
+async function loadOnce() {
   const days = $('range').value;
   if (state) text($('updated'), 'Refreshing…');
   else show('boot');
-  const out = await fetchData(days);
+  let out = await fetchData(days);
   if (out.superseded) return;
   if (out.unauthorized) return (state = null, wipeCache(), show('login'));
+  if (out.j && !out.j.days?.length) out = { err: { status: 'empty', message: '' } }; // a 200 with nothing in it is not a dashboard
   if (out.j) {
     saveCache(days, out.j);
-    return apply(out.j, null);
+    apply(out.j, null);
+    text($('sr-status'), `Data refreshed at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`);
+    return;
   }
   const cached = loadCache(days);
   if (cached) return apply(cached.payload, { savedAt: cached.savedAt, err: out.err });
@@ -543,6 +571,7 @@ async function load() {
 }
 
 $('range').addEventListener('change', load);
+$('refresh').addEventListener('click', load);
 $('showpw').addEventListener('change', (e) => ($('pw').type = e.target.checked ? 'text' : 'password'));
 $('logout').addEventListener('click', async () => {
   let ended = true;

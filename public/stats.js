@@ -150,7 +150,7 @@ export function insights(days) {
     if (n < 14 || r == null) text = `Not enough overlapping days yet (${n}; need 14).`;
     else if (a < 0.2) text = `No clear link between these across ${n} days.`;
     else text = `Across ${n} days, ${def.xs.toLowerCase()} went with ${r > 0 ? 'higher' : 'lower'} ${def.ys}: ${strength} ${r > 0 ? 'positive' : 'negative'} relationship (r = ${r.toFixed(2)}). Correlation, not proof of cause.`;
-    return { ...def, r, n, text };
+    return { ...def, r: n >= 14 ? r : null, n, text }; // with fewer days r is noise (3 points always correlate)
   });
 }
 
