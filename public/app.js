@@ -399,15 +399,17 @@ function insightsPanel() {
     ...(deltas.length ? [] : [emptyRow(4, 'Not enough history yet for a weekly comparison. It needs about a week of data plus earlier days to compare against.')]),
     ...deltas.map((x) => {
       const tr = document.createElement('tr');
-      const dir = Math.abs(x.pct) < 1 ? 'flat' : x.pct > 0 ? '▲ up' : '▼ down';
       [`${x.label}${x.unit ? ` (${x.unit})` : ''}`, num(x.now, x.now < 100 ? 1 : 0), num(x.prev, x.prev < 100 ? 1 : 0)].forEach((v, i) => {
         const td = text(document.createElement('td'), v);
         if (i) td.className = 'num';
         tr.append(td);
       });
       // Say whether the move is good or bad, in words as well as colour; skip it for small changes and for load.
-      const change = text(document.createElement('td'), `${dir} ${Math.abs(x.pct).toFixed(1)}%`);
+      const change = document.createElement('td');
       change.className = 'num';
+      const pct = `${Math.abs(x.pct).toFixed(1)}%`;
+      if (Math.abs(x.pct) < 1) change.append(`flat ${pct}`);
+      else change.append(Object.assign(text(document.createElement('span'), x.pct > 0 ? '▲' : '▼'), { ariaHidden: 'true', className: 'arrow' }), Object.assign(text(document.createElement('span'), x.pct > 0 ? ' up ' : ' down '), { className: 'sr-only' }), pct);
       if (x.good && Math.abs(x.pct) >= 3) {
         const better = Math.sign(x.pct) === x.good;
         change.append(' ', Object.assign(text(document.createElement('span'), better ? 'better' : 'worse'), { className: better ? 'good' : 'bad' }));
@@ -471,6 +473,17 @@ addEventListener('resize', () => {
 });
 
 // ---------- tabs ----------
+const APP_TITLE = 'Garmin Companion';
+
+// On a very narrow screen the tab rail scrolls; bring the selected tab into view by moving the rail itself.
+// (scrollIntoView would also move Chrome's keyboard starting point, so the first Tab would skip the skip link.)
+function revealTab(btn) {
+  const rail = btn.parentElement;
+  const r = rail.getBoundingClientRect(), b = btn.getBoundingClientRect();
+  if (b.right > r.right) rail.scrollLeft += b.right - r.right + 8;
+  else if (b.left < r.left) rail.scrollLeft -= r.left - b.left + 8;
+}
+
 function select(next, focus = false) {
   tab = next;
   for (const t of TABS) {
@@ -479,10 +492,18 @@ function select(next, focus = false) {
     btn.tabIndex = t === tab ? 0 : -1;
     $(`p-${t}`).hidden = t !== tab;
   }
-  history.replaceState(null, '', `#${tab}`);
+  history.replaceState(null, '', `#${tab}`); // replaceState does not fire hashchange, so this cannot loop
+  document.title = `${$(`t-${tab}`).textContent} · ${APP_TITLE}`;
   if (focus) $(`t-${tab}`).focus();
+  revealTab($(`t-${tab}`));
   render();
 }
+
+// A hash changed after load (typed, bookmarked link, another tab's link): follow it if it names a tab.
+addEventListener('hashchange', () => {
+  const h = location.hash.slice(1);
+  if (TABS.includes(h) && h !== tab) select(h);
+});
 
 document.querySelector('.tabs').addEventListener('click', (e) => e.target.dataset.tab && select(e.target.dataset.tab));
 document.querySelector('.tabs').addEventListener('keydown', (e) => {
@@ -494,13 +515,21 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
 
 // ---------- data + login ----------
 const VIEWS = ['boot', 'login', 'error', 'app'];
+// Set when the user acts inside a card that is about to close (the Unlock button disables itself, which already drops
+// focus to <body>, so "was focus inside the card" cannot detect it).
+let refocus = false;
 function show(view) {
+  // Only a card the user was working in (login, error) loses focus when it closes; a plain page load must leave
+  // focus alone so the skip link is the first Tab stop.
+  const lostFocus = refocus || ['login', 'error'].some((v) => $(v).contains(document.activeElement));
+  if (view !== 'boot') refocus = false; // the loading view comes first and must not use it up
   for (const v of VIEWS) $(v).hidden = v !== view;
+  $('skip').hidden = view !== 'app'; // nothing to skip to on the login, loading or error views
   if (view === 'login') $('pw').focus();
   if (view === 'error') $('err-retry').focus();
-  // The login or error card just disappeared, so focus would fall to <body>; land on the selected tab instead.
-  const a = document.activeElement;
-  if (view === 'app' && (!a || a === document.body || !a.offsetParent)) $(`t-${tab}`).focus({ preventScroll: true });
+  if (view === 'login') document.title = `Sign in · ${APP_TITLE}`;
+  else if (view !== 'app') document.title = APP_TITLE;
+  if (view === 'app' && lostFocus) $(`t-${tab}`).focus({ preventScroll: true });
 }
 
 function notify(msg, retry = false) {
@@ -609,19 +638,23 @@ $('logout').addEventListener('click', async () => {
   show('login');
   if (!ended) text($('login-err'), "Signed out here, but couldn't reach the server to end the session. It will expire on its own.").hidden = false;
 });
-$('err-retry').addEventListener('click', load);
-$('notice-retry').addEventListener('click', load);
+// Both retry buttons vanish when the retry succeeds, so ask for focus to move to the selected tab.
+$('err-retry').addEventListener('click', () => { refocus = true; load(); });
+$('notice-retry').addEventListener('click', () => { refocus = true; load(); });
 $('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = $('login-err');
   const btn = e.target.querySelector('button');
   err.hidden = true;
   btn.disabled = true;
+  refocus = true;
   try {
     const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('pw').value }) });
     if (r.ok) return void (($('pw').value = ''), load());
+    refocus = false;
     text(err, (await r.json().catch(() => ({}))).error ?? 'Login failed').hidden = false;
   } catch {
+    refocus = false;
     text(err, "Can't reach the dashboard. Check your connection and try again.").hidden = false;
   } finally {
     btn.disabled = false;

@@ -26,7 +26,9 @@ h1 { font-size: 1.25rem; margin: 0; }
 h1, .verdict, .kpi .value, .score-n, .a-name, .night-head, .driver .name b { color: var(--fg); }
 :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .skip { position: absolute; left: -999px; color: var(--primary); font-weight: 600; }
-.skip:focus { left: var(--sp-2); top: var(--sp-2); z-index: 9; display: flex; align-items: center; min-height: 44px; padding: 0 var(--sp-4); background: var(--card); border: 2px solid var(--primary); border-radius: 8px; }
+/* In flow when focused, so it pushes the page down instead of covering the title. */
+.skip:focus { position: static; display: flex; align-items: center; width: fit-content; margin: var(--sp-2) var(--sp-4); min-height: 44px; padding: 0 var(--sp-4); background: var(--card); border: 2px solid var(--primary); border-radius: 8px; }
+main:focus { outline: none; }
 .muted { color: var(--mfg); } .small { font-size: 0.875rem; } .err { color: var(--err); margin: 0; }
 [hidden] { display: none !important; }
 
@@ -198,3 +200,8 @@ table, .kpi .value, .score-n { font-variant-numeric: tabular-nums; }
 .sessions-wrap .cap { margin-bottom: var(--sp-1); }
 .sessions { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 0 var(--sp-5); }
 .sessions li { padding: var(--sp-2) 0; }
+
+/* Narrow phones: four tabs must fit at 320px, otherwise the last one is cut off at rest. */
+@media (max-width: 360px) { .tabs { gap: 0; padding: 0 var(--sp-1); } .tabs button { padding: 0 var(--sp-2); } }
+
+.arrow { margin-right: 0.25em; }

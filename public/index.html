@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <a class="skip" href="#main">Skip to content</a>
+  <a class="skip" id="skip" href="#main" hidden>Skip to content</a>
 
   <section id="boot" class="boot" aria-busy="true">
     <p class="muted" role="status">Loading your data…</p>
@@ -67,7 +67,7 @@
       <button role="tab" id="t-insights" aria-controls="p-insights" data-tab="insights">Insights</button>
     </div>
 
-    <main id="main">
+    <main id="main" tabindex="-1">
       <p id="notice" class="notice" role="status" hidden><span id="notice-text"></span> <button id="notice-retry" class="btn small" type="button" hidden>Retry</button></p>
 
       <section id="p-recovery" role="tabpanel" aria-labelledby="t-recovery" hidden>
