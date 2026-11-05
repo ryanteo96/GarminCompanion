@@ -1,6 +1,6 @@
 # Garmin Companion
 
-Personal fitness dashboard on the [Garmin Connect Personal API](https://developer.garmin.com/gc-developer-program/personal/personal-api): Recovery, Training, Activity and Insights tabs. A React + TypeScript single-page app plus three tiny serverless functions, deployed on Vercel. Your Garmin key never reaches the browser.
+Personal fitness dashboard on the [Garmin Connect Personal API](https://developer.garmin.com/gc-developer-program/personal/personal-api): Home, Recovery, Training, Activity and Insights tabs. A React + TypeScript single-page app plus four tiny serverless functions, deployed on Vercel. Your Garmin key never reaches the browser.
 
 ## Run locally
 
@@ -25,7 +25,7 @@ CI runs both on every push and pull request as two jobs, `check` and `e2e` (`.gi
 ## Deploy on Vercel
 
 1. Import this repo in Vercel. Framework preset: **Vite** (build command `vite build`, output directory `dist`; both are also set in `vercel.json`). The files in `api/` deploy as serverless functions.
-2. Add environment variables: `GARMIN_API_KEY`, `DASHBOARD_PASSWORD`, `SESSION_SECRET`.
+2. Add environment variables: `GARMIN_API_KEY`, `DASHBOARD_PASSWORD`, `SESSION_SECRET`. To sync the Home layout between devices, also install **Neon** from the Vercel Marketplace on the project; it provides `DATABASE_URL` (if the integration names the variable differently, map it to `DATABASE_URL` in the project's environment settings). Without it the layout stays in each browser.
 3. Deploy. The page is public but empty; all data comes from `/api/data`, which needs the login cookie.
 4. Before this version's first production deploy, open its **preview deployment** and check that `/api/data` answers: HTTP 401 while signed out, and data after you sign in. That confirms Vercel compiled the TypeScript functions in `api/`, which can only be verified on Vercel (locally they run through Vite).
 
@@ -52,10 +52,11 @@ Garmin Connect Web > Personal API Key > Create Key. The key is shown once and ex
 - `index.html`, `src/`: the React app
   - `main.tsx` / `App.tsx`: startup, routing (hash routes such as `/#/training`), and the loading / login / error / dashboard views
   - `store.ts`, `data/`: Zustand store, fetching, and the per-range local cache
+  - `home/`: the Home cards, their layout functions and store, and the Customize sheet
   - `panels/`, `components/`: one panel per tab, and the shared cards, charts and controls
   - `logic/`: readiness, load ratio, correlations and formatting (pure functions)
   - `chart.ts`, `layout.tsx`: Chart.js dataset builders, and the colour-scheme / width context that rebuilds charts
-- `api/login.ts`, `api/data.ts`, `api/logout.ts`: password login (signed HttpOnly cookie), the data endpoint, and sign-out
-- `lib/`: `garmin.ts` (token exchange, date-window chunking, field mapping), `sample.ts` (demo data), `types.ts` (the payload shared with the app)
+- `api/login.ts`, `api/data.ts`, `api/logout.ts`, `api/layout.ts`: password login (signed HttpOnly cookie), the data endpoint, sign-out, and the synced Home layout
+- `lib/`: `garmin.ts` (token exchange, date-window chunking, field mapping), `sample.ts` (demo data), `settings.ts` (a small key/value store in Neon), `types.ts` (the payload shared with the app)
 - `tools/api-plugin.ts`: serves `api/` under `npm run dev` and `npm run preview`
 - `tests/`: unit tests; `e2e/`: browser tests
