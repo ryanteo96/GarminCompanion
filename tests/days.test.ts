@@ -62,3 +62,11 @@ test('series14 returns the last 14 values, the usual line and a text summary', (
   const long = Array.from({ length: 20 }, (_, i) => day(`2026-10-${String(i + 1).padStart(2, '0')}`, { hrv: i }));
   assert.equal(series14(long, 'hrv', 'HRV', null)[0].length, 14);
 });
+
+test('series14 takes a window length and names it in the label', () => {
+  const days = Array.from({ length: 20 }, (_, i) => day(`2026-10-${String(i + 1).padStart(2, '0')}`, { hrv: i }));
+  const [values, , label] = series14(days, 'hrv', 'HRV', null, num, 7);
+  assert.equal(values.length, 7);
+  assert.match(label, /^HRV, last 7 days: /);
+  assert.match(series14(days, 'hrv', 'HRV', null)[2], /last 14 days/);
+});

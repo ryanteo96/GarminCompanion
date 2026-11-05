@@ -15,7 +15,7 @@ export default defineConfig({
     : {
         command: 'npm run build && npm run preview -- --port 4173 --strictPort',
         url: baseURL,
-        env: { DASHBOARD_PASSWORD: 'e2e-password', SESSION_SECRET: 'e2e-secret-0123456789', GARMIN_API_KEY: '' },
+        env: { DASHBOARD_PASSWORD: 'e2e-password', SESSION_SECRET: 'e2e-secret-0123456789', GARMIN_API_KEY: '', DATABASE_URL: '' },
         reuseExistingServer: false,
         timeout: 120_000,
       },

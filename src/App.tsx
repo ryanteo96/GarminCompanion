@@ -29,7 +29,7 @@ export function App() {
     if (view !== 'boot') clearRefocus(); // the loading view comes first and must not use it up
   }, [view, tab, fresh, error]);
 
-  if (!isTab(tab)) return <Navigate to="/recovery" replace />;
+  if (!isTab(tab)) return <Navigate to="/home" replace />;
 
   return (
     <>

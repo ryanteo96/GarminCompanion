@@ -24,14 +24,15 @@ const HOW = (
   </details>
 );
 
-function Today({ r, days }: { r: Readiness | null; days: DayWithLoad[] }) {
-  if (!r) return <Hero id="today" headingId="today-h" state="" tone="" verdict="Not enough data yet" detail="Readiness needs about a week of HRV and sleep history to compare against." chip={null} main={HOW} />;
+export function Today({ r, days, compact }: { r: Readiness | null; days: DayWithLoad[]; compact?: boolean }) {
+  if (!r) return <Hero id="today" headingId="today-h" state="" tone="" verdict="Not enough data yet" detail="Readiness needs about a week of HRV and sleep history to compare against." chip={null} main={compact ? undefined : HOW} compact={compact} />;
   const ratio = loadSeries(days).at(-1)?.ratio ?? null;
   // A reading that isn't from today gets a chip at the top, where the verdict is read, with what to do about it.
   const stale = r.date < localToday();
   return (
     <Hero
       id="today"
+      compact={compact}
       headingId="today-h"
       state={r.state}
       tone={verdictTone(r, ratio)}
@@ -40,9 +41,9 @@ function Today({ r, days }: { r: Readiness | null; days: DayWithLoad[] }) {
       chip={stale ? `Based on ${fmtDate(r.date)}, not today. Garmin hasn't reported today yet: sync your watch, then Refresh.` : null}
       main={
         <>
-          <p id="today-load" className="loadline">{ratio == null ? '' : `Training load ratio ${ratio.toFixed(2)}: ${ratioLabel(ratio).toLowerCase()}.`}</p>
+          {!compact && <p id="today-load" className="loadline">{ratio == null ? '' : `Training load ratio ${ratio.toFixed(2)}: ${ratioLabel(ratio).toLowerCase()}.`}</p>}
           <p id="today-date" className="small muted" hidden={stale}>{`Based on ${fmtDate(r.date)}.`}</p>
-          {HOW}
+          {!compact && HOW}
         </>
       }
       score={
@@ -68,37 +69,41 @@ function Today({ r, days }: { r: Readiness | null; days: DayWithLoad[] }) {
   );
 }
 
-function Cards({ days, r }: { days: DayWithLoad[]; r: Readiness | null }) {
+export function SignalCard({ k, days, r, n = 14 }: { k: ReadinessKey; days: DayWithLoad[]; r: Readiness | null; n?: number }) {
+  const [, ink, label, unit] = SIGNALS.find(([key]) => key === k)!;
   const sleepScore = latest(days, 'sleepScore');
+  const value = latest(days, k);
+  const f = k === 'sleepH' ? hm : num;
+  const p = r?.parts.find((x) => x.k === k && x.value === value); // only compare the reading the score used
+  const u = unit && ` ${unit}`;
+  let delta = '';
+  let pill: [string, string] | undefined;
+  if (p) {
+    const diff = p.value - p.base;
+    const shown = k === 'sleepH' ? Math.round(Math.abs(diff) * 60) : Math.round(Math.abs(diff));
+    delta = shown === 0 ? `At your usual ${f(p.base)}${u}` : `${diff > 0 ? '+' : '−'}${f(Math.abs(diff))}${u} vs usual ${f(p.base)}${u}`;
+    pill = p.z >= 0.5 ? ['good', 'Better'] : p.z <= -0.5 ? ['bad', 'Worse'] : ['', 'About usual'];
+  }
+  return (
+    <MetricCard
+      ink={ink}
+      label={label}
+      pill={pill}
+      value={f(value)}
+      unit={k === 'sleepH' || k === 'bbHigh' ? '' : unit}
+      glyph={k === 'bbHigh' ? <Battery value={value} /> : undefined}
+      subs={[delta, withAge(days, k, k === 'sleepH' && sleepScore != null ? `Score ${num(sleepScore)}` : '')]}
+      series={series14(days, k, label, p?.base ?? null, f, n)}
+    />
+  );
+}
+
+function Cards({ days, r }: { days: DayWithLoad[]; r: Readiness | null }) {
   return (
     <div className="metrics" id="k-recovery">
-      {SIGNALS.map(([k, ink, label, unit]) => {
-        const value = latest(days, k);
-        const f = k === 'sleepH' ? hm : num;
-        const p = r?.parts.find((x) => x.k === k && x.value === value); // only compare the reading the score used
-        const u = unit && ` ${unit}`;
-        let delta = '';
-        let pill: [string, string] | undefined;
-        if (p) {
-          const diff = p.value - p.base;
-          const shown = k === 'sleepH' ? Math.round(Math.abs(diff) * 60) : Math.round(Math.abs(diff));
-          delta = shown === 0 ? `At your usual ${f(p.base)}${u}` : `${diff > 0 ? '+' : '−'}${f(Math.abs(diff))}${u} vs usual ${f(p.base)}${u}`;
-          pill = p.z >= 0.5 ? ['good', 'Better'] : p.z <= -0.5 ? ['bad', 'Worse'] : ['', 'About usual'];
-        }
-        return (
-          <MetricCard
-            key={k}
-            ink={ink}
-            label={label}
-            pill={pill}
-            value={f(value)}
-            unit={k === 'sleepH' || k === 'bbHigh' ? '' : unit}
-            glyph={k === 'bbHigh' ? <Battery value={value} /> : undefined}
-            subs={[delta, withAge(days, k, k === 'sleepH' && sleepScore != null ? `Score ${num(sleepScore)}` : '')]}
-            series={series14(days, k, label, p?.base ?? null, f)}
-          />
-        );
-      })}
+      {SIGNALS.map(([k]) => (
+        <SignalCard key={k} k={k} days={days} r={r} />
+      ))}
     </div>
   );
 }

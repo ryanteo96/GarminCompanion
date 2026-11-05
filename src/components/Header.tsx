@@ -34,15 +34,20 @@ export function Header({ tab }: { tab: Tab }) {
         <button id="logout" className="link" type="button" onClick={() => void logout()}>Sign out</button>
         <span id="sr-status" className="sr-only" role="status">{srStatus}</span>
       </div>
-      <label className="range">
-        <span className="lbl">Chart range</span>
-        <select id="range" aria-describedby="range-note" value={range} onChange={(e) => void setRange(Number(e.target.value))}>
-          {RANGES.map(([days, label]) => (
-            <option key={days} value={days}>{label}</option>
-          ))}
-        </select>
-      </label>
-      <span id="range-note" className="sr-only">The chart range changes the charts and trends. The Today summary and the cards always use fixed windows, the last 7 and 28 days.</span>
+      {/* Nothing on Home follows the chart range, so neither the control nor its note is there. */}
+      {tab !== 'home' && (
+        <>
+        <label className="range">
+          <span className="lbl">Chart range</span>
+          <select id="range" aria-describedby="range-note" value={range} onChange={(e) => void setRange(Number(e.target.value))}>
+            {RANGES.map(([days, label]) => (
+              <option key={days} value={days}>{label}</option>
+            ))}
+          </select>
+        </label>
+        <span id="range-note" className="sr-only">The chart range changes the charts and trends. The Today summary and the cards always use fixed windows, the last 7 and 28 days.</span>
+        </>
+      )}
     </header>
   );
 }

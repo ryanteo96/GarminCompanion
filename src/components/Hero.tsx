@@ -16,12 +16,14 @@ interface HeroProps {
   score?: ReactNode;
   /** Anything after the score, e.g. the Training session list. */
   children?: ReactNode;
+  /** Home's smaller variant: a smaller numeral and padding, one column. */
+  compact?: boolean;
 }
 
 // The shared card behind both the readiness verdict (Recovery) and the training-load verdict (Training).
-export function Hero({ id, headingId, state, tone, verdict, detail, chip, main, score, children }: HeroProps) {
+export function Hero({ id, headingId, state, tone, verdict, detail, chip, main, score, children, compact }: HeroProps) {
   return (
-    <section id={id} className="card today" aria-labelledby={headingId} data-state={state} data-tone={tone}>
+    <section id={id} className={compact ? 'card today compact' : 'card today'} aria-labelledby={headingId} data-state={state} data-tone={tone}>
       {chip !== undefined && <p id={`${id}-chip`} className="chip" hidden={!chip}>{chip}</p>}
       <div className="today-main">
         <h2 id={headingId} className="verdict">{verdict}</h2>

@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
-import type { ServerResponse } from 'node:http';
 import { test } from 'vitest';
 import { authed, mintCookie, same } from '../lib/auth.js';
-import type { Handler, Req } from '../lib/http.js';
 import type { ReadinessState } from '../src/logic/stats.js';
 import { addDays, clock, normalize, parseToken, pickToday, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
@@ -10,6 +8,7 @@ import data from '../api/data.js';
 import logout from '../api/logout.js';
 import { friendly } from '../src/logic/errors.js';
 import { ago } from '../src/logic/time.js';
+import { call } from './stubs.js';
 import { band, corr, explain, isPartialWeek, loadBand, loadSummary, loadZone, ratioLabel, ratioPos, insights, loadSeries, readiness, rolling, verdict, verdictTone, weekDeltas, weekStart, withLoad } from '../src/logic/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
@@ -181,22 +180,6 @@ test('weekDeltas says which direction is good', () => {
   assert.ok(by.hrv.pct > 15 && by.restingHr.pct > 8);
   assert.equal(by.steps, undefined, 'metrics with no data are left out');
 });
-
-interface Out {
-  headers: Record<string, string>;
-  status: number;
-  body: string;
-}
-const call = async (handler: Handler, req: unknown): Promise<Out> => {
-  const out: Out = { headers: {}, status: 0, body: '' };
-  const res = {
-    setHeader: (k: string, v: string) => { out.headers[k] = v; },
-    end: (b: string) => { out.body = b; },
-    set statusCode(v: number) { out.status = v; },
-  };
-  await handler(req as Req, res as unknown as ServerResponse);
-  return out;
-};
 
 test('data responses are never cacheable, whether authorised or not', async () => {
   const saved = process.env.GARMIN_API_KEY;

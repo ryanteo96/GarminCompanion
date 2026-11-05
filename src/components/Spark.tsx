@@ -1,6 +1,6 @@
 import type { Series14 } from '../logic/days.js';
 
-// The last 14 days as a line that scales to its own range, with your usual drawn dashed behind it. Gaps break the line.
+// A trend (the last 14 days on the detail tabs, 7 on Home) as a line that scales to its own range, with your usual drawn dashed behind it. Gaps break the line.
 export function Spark({ series: [values, usual, label] }: { series: Series14 }) {
   const seen = values.filter((v) => v != null);
   if (seen.length < 2) return null;

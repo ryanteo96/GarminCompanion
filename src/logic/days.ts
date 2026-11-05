@@ -25,9 +25,9 @@ export const dayLabel = (days: DayWithLoad[], key: DayKey, base: string): string
 
 export type Series14 = [(number | null | undefined)[], number | null, string];
 
-// Last 14 days of one signal, with its usual (or null) as the dashed reference.
-export function series14(days: DayWithLoad[], key: DayKey, name: string, usual: number | null, f: (x: number) => string = num): Series14 {
-  const v = days.slice(-14).map((x) => x[key]);
+// The last `n` days (14 by default) of one signal, with its usual (or null) as the dashed reference.
+export function series14(days: DayWithLoad[], key: DayKey, name: string, usual: number | null, f: (x: number) => string = num, n = 14): Series14 {
+  const v = days.slice(-n).map((x) => x[key]);
   const seen = v.filter((x) => x != null);
-  return [v, usual, seen.length ? `${name}, last 14 days: ${f(Math.min(...seen))} to ${f(Math.max(...seen))}` : name];
+  return [v, usual, seen.length ? `${name}, last ${n} days: ${f(Math.min(...seen))} to ${f(Math.max(...seen))}` : name];
 }
