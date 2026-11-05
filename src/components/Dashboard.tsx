@@ -14,7 +14,7 @@ export function Dashboard({ tab }: { tab: Tab }) {
         <Header tab={tab} />
         <main id="main" tabIndex={-1}>
           <Notice />
-          {/* All four tabpanels stay in the DOM so every tab's aria-controls resolves; only the selected one has content. */}
+          {/* Every tab's panel stays in the DOM so every tab's aria-controls resolves; only the selected one has content. */}
           {TABS.map((t) => (
             <section key={t} id={`p-${t}`} role="tabpanel" aria-labelledby={`t-${t}`} hidden={t !== tab}>
               {t === tab && (

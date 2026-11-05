@@ -3,6 +3,7 @@ import { cachedKeys, patchData, signIn } from './helpers.js';
 
 test('changing the range asks the server for that many days', async ({ page }) => {
   await signIn(page);
+  await page.getByRole('tab', { name: 'Recovery' }).click();
   const request = page.waitForRequest((r) => r.url().includes('/api/data?days=30'));
   await page.getByLabel('Chart range').selectOption('30');
   await request;
@@ -26,7 +27,7 @@ test('a failed refresh shows the saved copy with a Retry that returns focus to t
   await page.unroute('**/api/data*');
   await page.getByRole('button', { name: 'Retry' }).click();
   await expect(page.getByText(/Showing data saved/)).toBeHidden();
-  await expect(page.getByRole('tab', { name: 'Recovery' })).toBeFocused();
+  await expect(page.getByRole('tab', { name: 'Home' })).toBeFocused();
 });
 
 test('with nothing cached, a failed first load shows the error view and Try again recovers', async ({ page }) => {
@@ -38,7 +39,7 @@ test('with nothing cached, a failed first load shows the error view and Try agai
   await expect(page.getByRole('button', { name: 'Try again' })).toBeFocused();
   await page.unroute('**/api/data*');
   await page.getByRole('button', { name: 'Try again' }).click();
-  await expect(page.getByRole('tab', { name: 'Recovery' })).toBeFocused();
+  await expect(page.getByRole('tab', { name: 'Home' })).toBeFocused();
 });
 
 test('a 401 mid-session shows login and unlocking returns to the same tab', async ({ page }) => {

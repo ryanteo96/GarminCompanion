@@ -29,6 +29,7 @@ test('a series with no data shows an empty state', async ({ page }) => {
     for (const day of json.days) day.hrv = null;
   });
   await signIn(page);
+  await page.getByRole('tab', { name: 'Recovery' }).click();
   await expect(page.getByText('No data for this period.').first()).toBeVisible();
   expect(errors).toEqual([]);
 });

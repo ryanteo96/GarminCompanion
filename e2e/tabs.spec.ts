@@ -15,19 +15,20 @@ test('clicking a tab selects it, updates the URL and the page title', async ({ p
 
 test('arrow keys, Home and End move the selection and the focus', async ({ page }) => {
   await signIn(page);
-  await tab(page, 'Recovery').focus();
+  await tab(page, 'Home').focus(); // Home is the selected tab on landing, and the arrow keys move from the selected one
   const press = async (key: string, expected: string) => {
     await page.keyboard.press(key);
     await expect(tab(page, expected)).toBeFocused();
     await expect(tab(page, expected)).toHaveAttribute('aria-selected', 'true');
   };
+  await press('ArrowRight', 'Recovery');
   await press('ArrowRight', 'Training');
   await press('ArrowDown', 'Activity');
   await press('End', 'Insights');
-  await press('ArrowRight', 'Recovery');
+  await press('ArrowRight', 'Home');
   await press('ArrowLeft', 'Insights');
   await press('ArrowUp', 'Activity');
-  await press('Home', 'Recovery');
+  await press('Home', 'Home');
 });
 
 // A fresh page in the signed-in context loads straight onto the hash, like a bookmark would.
@@ -52,13 +53,28 @@ test('a router-style link to #/insights opens Insights', async ({ page }) => {
   await expect(fresh).toHaveTitle('Insights · Garmin Companion');
 });
 
+test('a legacy #recovery bookmark still opens Recovery', async ({ page }) => {
+  await signIn(page);
+  const fresh = await openFresh(page, '#recovery');
+  await expect(tab(fresh, 'Recovery')).toHaveAttribute('aria-selected', 'true');
+  await expect(fresh).toHaveURL(/#\/?recovery$/);
+});
+
+test('#home and #/home open Home', async ({ page }) => {
+  await signIn(page);
+  for (const hash of ['#home', '#/home']) {
+    const fresh = await openFresh(page, hash);
+    await expect(tab(fresh, 'Home')).toHaveAttribute('aria-selected', 'true');
+  }
+});
+
 for (const hash of ['#/nope', '#nope', '']) {
-  test(`an unknown hash "${hash}" lands on Recovery`, async ({ page }) => {
+  test(`an unknown hash "${hash}" lands on Home`, async ({ page }) => {
     await signIn(page);
     const fresh = await openFresh(page, hash);
-    await expect(tab(fresh, 'Recovery')).toHaveAttribute('aria-selected', 'true');
-    await expect(fresh).toHaveTitle('Recovery · Garmin Companion');
-    await expect(fresh).toHaveURL(/#\/?recovery$/);
+    await expect(tab(fresh, 'Home')).toHaveAttribute('aria-selected', 'true');
+    await expect(fresh).toHaveTitle('Home · Garmin Companion');
+    await expect(fresh).toHaveURL(/#\/?home$/);
   });
 }
 
@@ -70,5 +86,5 @@ test('the skip link moves focus to the main area without changing the tab', asyn
   await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('main')).toBeFocused();
-  await expect(tab(page, 'Recovery')).toHaveAttribute('aria-selected', 'true');
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
 });

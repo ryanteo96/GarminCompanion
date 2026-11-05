@@ -12,5 +12,5 @@ test('a wrong password shows an error and stays on the form', async ({ page }) =
 test('the right password opens the dashboard in demo mode', async ({ page }) => {
   await signIn(page);
   await expect(page.getByText('Demo data')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Recovery' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Home' })).toHaveAttribute('aria-selected', 'true');
 });

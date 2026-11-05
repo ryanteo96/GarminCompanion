@@ -4,6 +4,7 @@ import { TABS, TAB_NAMES, type Tab } from '../tabs.js';
 
 // Stroke-family icons; decorative, so the words beside them carry the meaning.
 const ICONS: Record<Tab, ReactNode> = {
+  home: <path d="M3 11l9-7 9 7M5 10v10h14V10" />,
   recovery: <path d="M2 12h4l3-7 4 14 3-7h6" />,
   training: <path d="M5 20V11M12 20V4M19 20v-6" />,
   activity: (

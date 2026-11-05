@@ -18,6 +18,7 @@ test('no horizontal overflow at 320 px', async ({ page }) => {
 test('charts rebuild after a resize and a dark-scheme switch', async ({ page }) => {
   const errors = watchErrors(page);
   await signIn(page);
+  await page.getByRole('tab', { name: 'Recovery' }).click();
   await page.setViewportSize({ width: 320, height: 800 });
   await page.emulateMedia({ colorScheme: 'dark' });
   const canvases = page.locator('canvas:visible');

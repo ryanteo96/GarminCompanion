@@ -19,7 +19,7 @@ if (legacy && TABS.some((t) => t === legacy[1])) history.replaceState(null, '', 
 
 const router = createHashRouter([
   { path: '/:tab', element: <App /> },
-  { path: '*', element: <Navigate to="/recovery" replace /> },
+  { path: '*', element: <Navigate to="/home" replace /> },
 ]);
 
 // Started here, not in an effect, so StrictMode cannot fire the first load twice.
