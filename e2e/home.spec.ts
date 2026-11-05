@@ -129,3 +129,48 @@ test('a saved layout is there on first paint and unknown ids are ignored', async
   expect(await page.evaluate(() => (window as unknown as { __sawReadiness: boolean }).__sawReadiness)).toBe(false);
   expect(errors).toEqual([]);
 });
+
+const order = (page: Page) => page.locator('.home-grid [data-card]').evaluateAll((els) => els.map((el) => el.getAttribute('data-card')));
+const DEFAULT = ['readiness', 'hrv', 'resting-hr', 'sleep', 'body-battery', 'load', 'sessions', 'steps', 'intensity', 'stress'];
+
+test('hide, show and reset from the sheet survive a reload', async ({ page }) => {
+  await signIn(page);
+  const opener = page.getByRole('button', { name: 'Customize' });
+  const dialog = page.getByRole('dialog', { name: 'Customize Home' });
+  await opener.click();
+  const hrv = dialog.getByRole('switch', { name: 'Show HRV' });
+  await expect(hrv).toBeChecked();
+  await hrv.click();
+  await expect(hrv).not.toBeChecked();
+  await expect(hrv).toBeFocused();
+  await expect(dialog.locator('.sheet-hidden .sheet-title')).toHaveText(['HRV']);
+  await expect(page.locator('[data-card="hrv"]')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.home-grid [data-card]').first()).toBeVisible();
+  await opener.click();
+  await expect(dialog.getByRole('switch', { name: 'Show HRV' })).not.toBeChecked();
+  await dialog.getByRole('switch', { name: 'Show HRV' }).click();
+  await expect(dialog.getByRole('switch', { name: 'Show HRV' })).toBeChecked();
+  await expect(dialog.getByRole('switch', { name: 'Show HRV' })).toBeFocused();
+  expect((await order(page)).at(-1)).toBe('hrv');
+  await dialog.getByRole('button', { name: 'Reset to default' }).click();
+  expect(await order(page)).toEqual(DEFAULT);
+  await page.reload();
+  await expect(page.locator('.home-grid [data-card]').first()).toBeVisible();
+  expect(await order(page)).toEqual(DEFAULT);
+  await opener.click();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test('hiding every card leaves a prompt', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('button', { name: 'Customize' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Customize Home' });
+  // A hidden row moves to the other list, so always take the first one still on.
+  for (let i = 0; i < DEFAULT.length; i++) await dialog.getByRole('switch', { checked: true }).first().click();
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await expect(page.locator('.home-empty')).toContainText(/Use Customize/);
+  await expect(page.locator('.home-grid [data-card]')).toHaveCount(0);
+});

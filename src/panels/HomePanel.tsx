@@ -9,6 +9,7 @@ export function HomePanel() {
   return (
     <>
       <button type="button" className="btn home-customize" onClick={() => sheet.current?.showModal()}>Customize</button>
+      {cards.length === 0 && <p className="card home-empty">Every card is hidden. Use Customize to bring them back.</p>}
       <div className="home-grid">
         {cards.map((id) => {
           const { Component, span } = CARDS[id];

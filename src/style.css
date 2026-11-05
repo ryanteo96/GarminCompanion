@@ -185,9 +185,20 @@ figcaption, .cap { margin: 0 0 var(--sp-3); font-size: 0.875rem; font-weight: 60
 
 /* Customize sheet: a bottom sheet on a phone, a right-hand panel from 820px */
 .home-customize { margin-bottom: var(--sp-3); }
-.sheet { position: fixed; inset: auto 0 0; width: 100%; max-width: none; max-height: 85dvh; margin: 0; padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + env(safe-area-inset-bottom)); overflow-y: auto; color: var(--text); background: var(--panel); border: 1px solid var(--rule); border-radius: 14px 14px 0 0; }
+.sheet { position: fixed; inset: auto 0 0; width: 100%; max-width: none; max-height: 85dvh; margin: 0; padding: 0; overflow-y: auto; color: var(--text); background: var(--panel); border: 1px solid var(--rule); border-radius: 14px 14px 0 0; }
 .sheet::backdrop { background: rgb(0 0 0 / 50%); }
+.sheet-body { padding: var(--sp-4) var(--sp-4) 0; }
 .sheet h2 { margin-bottom: var(--sp-2); font-size: 1.125rem; }
+.sheet h3 { margin: var(--sp-3) 0 var(--sp-1); font-size: 0.875rem; color: var(--mfg); }
+.sheet-text { display: grid; flex: 1; min-width: 0; }
+.sheet-group { font-size: 0.75rem; color: var(--mfg); }
+.sheet-switch { display: grid; place-items: center; min-width: 52px; min-height: 44px; cursor: pointer; }
+.sheet-switch input { appearance: none; position: relative; width: 44px; height: 26px; margin: 0; background: var(--panel-2); border: 1px solid var(--field); border-radius: 13px; cursor: pointer; }
+.sheet-switch input::before { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: var(--mfg); border-radius: 50%; transition: transform 0.15s; }
+.sheet-switch input:checked { background: var(--primary); border-color: var(--primary); }
+.sheet-switch input:checked::before { background: var(--on-primary); transform: translateX(18px); }
+.sheet-foot { position: sticky; bottom: 0; display: flex; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--rule); }
+.home-empty { color: var(--mfg); }
 .sheet-list { margin: 0 0 var(--sp-3); padding: 0; list-style: none; }
 .sheet-row { display: flex; align-items: center; gap: var(--sp-3); min-height: 44px; background: var(--panel); border-bottom: 1px solid var(--rule); }
 .sheet-row.dragging { position: relative; z-index: 1; background: var(--panel-2); }
