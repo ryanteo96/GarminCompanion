@@ -1,12 +1,13 @@
+import type { ServerResponse } from 'node:http';
 import { authed } from '../lib/auth.js';
 import { fetchAll, fetchRaw, pickToday, shape } from '../lib/garmin.js';
-import { send } from '../lib/http.js';
+import { send, type Req } from '../lib/http.js';
 import { sample } from '../lib/sample.js';
 
-export default async function handler(req, res) {
+export default async function handler(req: Req, res: ServerResponse): Promise<void> {
   try {
     if (!authed(req)) return send(res, 401, { error: 'unauthorized' });
-    const q = new URL(req.url, 'http://x').searchParams;
+    const q = new URL(req.url ?? '/', 'http://x').searchParams;
     const n = Number(q.get('days')) || 90;
     const today = pickToday(q.get('today'));
     const days = Math.min(365, Math.max(7, Math.round(n)));
@@ -15,6 +16,6 @@ export default async function handler(req, res) {
     const data = demo ? sample(days, today) : await fetchAll(days, today);
     send(res, 200, { demo, fetchedAt: new Date().toISOString(), ...data }, { 'Cache-Control': 'private, no-store' });
   } catch (e) {
-    send(res, 502, { error: e.message });
+    send(res, 502, { error: e instanceof Error ? e.message : String(e) });
   }
 }

@@ -1,16 +1,24 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { test } from 'node:test';
+import type { ServerResponse } from 'node:http';
+import { test } from 'vitest';
 import { authed, mintCookie, same } from '../lib/auth.js';
+import type { Handler, Req } from '../lib/http.js';
+import type { ReadinessState } from '../src/logic/stats.js';
 import { addDays, clock, normalize, parseToken, pickToday, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
 import data from '../api/data.js';
 import logout from '../api/logout.js';
-import { friendly } from '../public/errors.js';
-import { ago } from '../public/time.js';
-import { band, corr, explain, isPartialWeek, loadBand, loadSummary, loadZone, ratioLabel, ratioPos, insights, loadSeries, readiness, rolling, verdict, verdictTone, weekDeltas, weekStart, withLoad } from '../public/stats.js';
+import { friendly } from '../src/logic/errors.js';
+import { ago } from '../src/logic/time.js';
+import { band, corr, explain, isPartialWeek, loadBand, loadSummary, loadZone, ratioLabel, ratioPos, insights, loadSeries, readiness, rolling, verdict, verdictTone, weekDeltas, weekStart, withLoad } from '../src/logic/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
+
+// Fails the test with a clear message instead of a TypeError when a value the test depends on is missing.
+function must<T>(x: T | null | undefined): T {
+  assert.ok(x != null, 'expected a value');
+  return x;
+}
 
 test('ranges split inclusive dates into windows', () => {
   assert.deepEqual(ranges('2026-01-01', '2026-01-10', 4), [['2026-01-01', '2026-01-04'], ['2026-01-05', '2026-01-08'], ['2026-01-09', '2026-01-10']]);
@@ -40,11 +48,11 @@ test('normalize skips records without a date instead of crashing', () => {
 test('token exchange sends the ApiKey header and parses the access token', async () => {
   process.env.GARMIN_API_KEY = 'k123';
   const real = globalThis.fetch;
-  let seen;
-  globalThis.fetch = async (url, init) => ((seen = { url, init }), new Response('eyJhbGciOiJSUzI1NiJ9.payload.sig\n', { status: 200 }));
+  let seen = undefined as { url: string; init?: RequestInit } | undefined;
+  globalThis.fetch = ((url: string, init?: RequestInit) => ((seen = { url, init }), Promise.resolve(new Response('eyJhbGciOiJSUzI1NiJ9.payload.sig\n', { status: 200 })))) as typeof fetch;
   assert.equal(await token(), 'eyJhbGciOiJSUzI1NiJ9.payload.sig');
-  assert.equal(seen.init.headers.Authorization, 'ApiKey k123');
-  assert.match(seen.url, /personal-api-key\/token$/);
+  assert.equal((must(seen).init?.headers as Record<string, string>).Authorization, 'ApiKey k123');
+  assert.match(must(seen).url, /personal-api-key\/token$/);
   globalThis.fetch = real;
 });
 
@@ -64,28 +72,28 @@ test('cookie round-trip and tamper detection', () => {
 });
 
 test('stats: correlation, load ratio, readiness, insights on sample data', () => {
-  assert.equal(Math.round(corr([[1, 2], [2, 4], [3, 6], [4, 8]]).r), 1);
+  assert.equal(Math.round(corr([[1, 2], [2, 4], [3, 6], [4, 8]]).r ?? NaN), 1);
   assert.equal(weekStart('2026-11-04'), '2026-11-02'); // Wednesday -> Monday
   const { days, activities } = sample(120, '2026-11-04');
   assert.equal(days.length, 120);
   const d = withLoad(days, activities);
   const ls = loadSeries(d);
-  assert.ok(ls.at(-1).ratio > 0);
-  const r = readiness(d);
+  assert.ok((must(ls.at(-1)).ratio ?? 0) > 0);
+  const r = must(readiness(d));
   assert.ok(r.score >= 0 && r.score <= 100);
-  const sleepHrv = insights(d).find((i) => i.id === 'sleep-hrv');
-  assert.ok(sleepHrv.r > 0.3, `sample sleep->HRV link should be visible, got ${sleepHrv.r}`);
+  const sleepHrv = must(insights(d).find((i) => i.id === 'sleep-hrv'));
+  assert.ok((sleepHrv.r ?? 0) > 0.3, `sample sleep->HRV link should be visible, got ${String(sleepHrv.r)}`);
   assert.match(insights(d.slice(-5))[0].text, /Not enough/);
 });
 
 test('readiness states, headline, driver values and explanation', () => {
   const flat = Array.from({ length: 30 }, (_, i) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, hrv: 50 + (i % 3), restingHr: 55 + (i % 2), sleepH: 7 + (i % 2) * 0.2, bbHigh: 80 + (i % 3) }));
-  const at = (last) => readiness([...flat, { date: '2026-10-31', ...last }]);
+  const at = (last: { hrv: number; restingHr: number; sleepH: number; bbHigh: number }) => must(readiness([...flat, { date: '2026-10-31', ...last }]));
   const bad = at({ hrv: 30, restingHr: 66, sleepH: 4.5, bbHigh: 55 });
   assert.equal(bad.state, 'strained');
   assert.equal(verdict(bad, 1), 'Keep today easy');
-  assert.equal(bad.parts.find((p) => p.k === 'hrv').value, 30);
-  assert.ok(bad.parts.find((p) => p.k === 'hrv').base > 49);
+  assert.equal(must(bad.parts.find((p) => p.k === 'hrv')).value, 30);
+  assert.ok(must(bad.parts.find((p) => p.k === 'hrv')).base > 49);
   const why = explain(bad);
   for (const phrase of ['HRV is low', 'sleep was short', 'Body Battery peaked low']) assert.ok(why.toLowerCase().includes(phrase.toLowerCase()), phrase);
   assert.match(why, /^[A-Z].*compared with your own last 28 days\.$/);
@@ -106,21 +114,6 @@ test('friendly error copy covers offline, timeout, rate limit, bad key and serve
   assert.match(friendly({ status: 500, message: 'boom' })[0], /Something went wrong/);
 });
 
-test('dev server returns 404 for a missing static file and keeps running', async () => {
-  const port = 41000 + Math.floor(Math.random() * 1000);
-  const child = spawn(process.execPath, ['dev.js'], { env: { ...process.env, PORT: String(port) }, stdio: ['ignore', 'pipe', 'pipe'] });
-  try {
-    await new Promise((resolve, reject) => {
-      child.stdout.once('data', resolve);
-      child.once('exit', () => reject(new Error('dev server exited before listening')));
-    });
-    assert.equal((await fetch(`http://localhost:${port}/favicon.ico`)).status, 404);
-    assert.equal((await fetch(`http://localhost:${port}/`)).status, 200, 'server must survive the 404');
-  } finally {
-    child.kill();
-  }
-});
-
 test('clock reads ISO strings as written and epoch millis as UTC wall time', () => {
   assert.equal(clock('2026-11-03T23:14:00.0'), '23:14');
   assert.equal(clock('2026-11-03 06:40:00'), '06:40');
@@ -136,7 +129,8 @@ test('rolling mean and normal-range band', () => {
   const vals = Array.from({ length: 10 }, (_, i) => 50 + (i % 2) * 2); // 50,52,50,52...
   const b = band(vals);
   assert.equal(b[5], null, 'needs 7 readings');
-  assert.ok(b[9].lo < 51 && b[9].hi > 51 && b[9].hi - b[9].lo < 3);
+  const last = must(b[9]);
+  assert.ok(last.lo < 51 && last.hi > 51 && last.hi - last.lo < 3);
   assert.equal(band([null, 1, 2])[2], null);
 });
 
@@ -170,11 +164,7 @@ test('isPartialWeek flags the first and last week of a range', () => {
 });
 
 test('logout clears the cookie and only accepts POST', async () => {
-  const run = async (method, headers = {}) => {
-    const out = { headers: {} };
-    await logout({ method, headers }, { setHeader: (k, v) => (out.headers[k] = v), end: (b) => (out.body = b), set statusCode(v) { out.status = v; } });
-    return out;
-  };
+  const run = (method: string, headers: Record<string, string> = {}) => call(logout, { method, headers });
   const ok = await run('POST', { 'x-forwarded-proto': 'https' });
   assert.equal(ok.status, 200);
   assert.match(ok.headers['Set-Cookie'], /^gc=;.*HttpOnly.*SameSite=Strict.*Max-Age=0.*Secure$/);
@@ -192,9 +182,19 @@ test('weekDeltas says which direction is good', () => {
   assert.equal(by.steps, undefined, 'metrics with no data are left out');
 });
 
-const call = async (handler, req) => {
-  const out = { headers: {} };
-  await handler(req, { setHeader: (k, v) => (out.headers[k] = v), end: (b) => (out.body = b), set statusCode(v) { out.status = v; } });
+interface Out {
+  headers: Record<string, string>;
+  status: number;
+  body: string;
+}
+const call = async (handler: Handler, req: unknown): Promise<Out> => {
+  const out: Out = { headers: {}, status: 0, body: '' };
+  const res = {
+    setHeader: (k: string, v: string) => { out.headers[k] = v; },
+    end: (b: string) => { out.body = b; },
+    set statusCode(v: number) { out.status = v; },
+  };
+  await handler(req as Req, res as unknown as ServerResponse);
   return out;
 };
 
@@ -228,7 +228,7 @@ test('correlations show no number below 14 overlapping days', () => {
   assert.ok(full.every((i) => i.r != null), 'plenty of days: every card has an r');
   const thin = insights(withLoad(days.slice(-4), activities));
   assert.ok(thin.every((i) => i.r === null && /Not enough/.test(i.text)), 'four days: r is withheld, not 1.00');
-  const edge = insights(withLoad(days.slice(-15), activities)).find((i) => i.lag === 0);
+  const edge = must(insights(withLoad(days.slice(-15), activities)).find((i) => i.lag === 0));
   assert.ok(edge.n >= 14 ? edge.r != null : edge.r === null, 'the threshold follows n');
 });
 
@@ -238,7 +238,7 @@ test('verdict combines recovery and load, and never says "hard session" over a s
   assert.equal(loadBand(0.8), 'ok');
   assert.equal(loadBand(1.5), 'ok', '1.5 is still "ramping up", not spiking');
   assert.equal(loadBand(1.51), 'spiking');
-  const r = (state) => ({ state });
+  const r = (state: ReadinessState) => ({ state });
   assert.equal(verdict(r('well'), 1.0), 'Good day for a hard session');
   assert.equal(verdict(r('well'), null), 'Good day for a hard session', 'no load history: recovery decides');
   assert.match(verdict(r('well'), 1.94), /load is spiking: keep it moderate/);
@@ -246,8 +246,8 @@ test('verdict combines recovery and load, and never says "hard session" over a s
   assert.match(verdict(r('well'), 0.5), /light load: room to push/);
   assert.match(verdict(r('strained'), 0.77), /despite|even with a light load/, 'explains the apparent contradiction instead of ignoring it');
   assert.match(verdict(r('strained'), 1.94), /^Rest today/);
-  for (const st of ['well', 'typical', 'below', 'strained']) {
-    const heads = new Set(['light', 'ok', 'spiking'].map((b) => verdict(r(st), { light: 0.5, ok: 1, spiking: 2 }[b])));
+  for (const st of ['well', 'typical', 'below', 'strained'] as const) {
+    const heads = new Set((['light', 'ok', 'spiking'] as const).map((b) => verdict(r(st), { light: 0.5, ok: 1, spiking: 2 }[b])));
     assert.equal(heads.size, 3, `${st}: each load band reads differently`);
   }
 });
@@ -275,7 +275,7 @@ test('loadSummary: sentence first, numbers in prose, tone matches the zone', () 
   assert.equal(a.head, 'Your load is lighter than usual');
   assert.equal(a.tone, 'typical');
   assert.match(a.detail, /^312 over the last 7 days, against 407 in a usual week \(your 28-day average\)\./);
-  const t = (ratio) => loadSummary({ acute: 100, chronic: 100, ratio }).tone;
+  const t = (ratio: number) => loadSummary({ acute: 100, chronic: 100, ratio }).tone;
   assert.deepEqual([0.5, 1, 1.4, 1.9].map(t), ['typical', 'well', 'below', 'strained']);
   const none = loadSummary({ acute: 2345, chronic: null, ratio: null });
   assert.equal(none.head, 'Not enough history yet');

@@ -1,6 +1,7 @@
-import { send } from '../lib/http.js';
+import type { ServerResponse } from 'node:http';
+import { send, type Req } from '../lib/http.js';
 
-export default async function handler(req, res) {
+export default function handler(req: Req, res: ServerResponse): void {
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only' });
   const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
   send(res, 200, { ok: true }, {

@@ -1,7 +1,8 @@
+import type { ServerResponse } from 'node:http';
 import { MAX_AGE, mintCookie, same } from '../lib/auth.js';
-import { readJson, send } from '../lib/http.js';
+import { readJson, send, type Req } from '../lib/http.js';
 
-export default async function handler(req, res) {
+export default async function handler(req: Req, res: ServerResponse): Promise<void> {
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only' });
   try {
     const want = process.env.DASHBOARD_PASSWORD;
@@ -16,6 +17,6 @@ export default async function handler(req, res) {
       'Set-Cookie': `gc=${mintCookie()}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${MAX_AGE}${secure}`,
     });
   } catch (e) {
-    send(res, 500, { error: e.message });
+    send(res, 500, { error: e instanceof Error ? e.message : String(e) });
   }
 }

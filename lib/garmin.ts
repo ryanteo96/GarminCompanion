@@ -1,17 +1,19 @@
 // Garmin Connect Personal API client. Endpoints and field names follow Garmin's Swagger spec
 // (developer.garmin.com/gc-developer-program/personal/swagger-docs).
+import type { Activity, Day, RawActivity, RawDaily, RawHrv, RawInput, RawSleep, Skipped } from './types.js';
+
 const BASE = 'https://personal.connectapi.garmin.com';
-let tok = { value: null, at: 0 };
+let tok: { value: string | null; at: number } = { value: null, at: 0 };
 
 // Garmin returns the bare JWT as plain text; also accept a JSON body in case that changes.
-export function parseToken(raw) {
+export function parseToken(raw: string): string {
   const body = raw.trim();
   if (!body.startsWith('{') && !body.startsWith('"')) return body;
-  const j = JSON.parse(body);
-  return typeof j === 'string' ? j : (j.access_token ?? j.accessToken ?? j.token);
+  const j = JSON.parse(body) as string | { access_token?: string; accessToken?: string; token?: string };
+  return typeof j === 'string' ? j : (j.access_token ?? j.accessToken ?? j.token ?? '');
 }
 
-export async function token() {
+export async function token(): Promise<string> {
   if (tok.value && Date.now() - tok.at < 23 * 3600e3) return tok.value; // tokens last 24h, no refresh tokens
   const r = await fetch(`${BASE}/personalapitoken-service/personal-api/personal-api-key/token`, {
     method: 'POST',
@@ -24,35 +26,35 @@ export async function token() {
   return value;
 }
 
-async function get(path, params = {}, retry = true) {
+async function get<T>(path: string, params: Record<string, string | number> = {}, retry = true): Promise<T | null> {
   const url = new URL(BASE + path);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
   const r = await fetch(url, { headers: { Authorization: `Bearer ${await token()}` } });
   if (r.status === 401 && retry) {
     tok = { value: null, at: 0 };
-    return get(path, params, false);
+    return get<T>(path, params, false);
   }
   if (!r.ok) throw new Error(`Garmin ${path} returned ${r.status}`);
   const text = await r.text();
-  return text ? JSON.parse(text) : null;
+  return text ? (JSON.parse(text) as T) : null;
 }
 
-export const addDays = (d, n) => {
+export const addDays = (d: string, n: number): string => {
   const t = new Date(`${d}T00:00:00Z`);
   t.setUTCDate(t.getUTCDate() + n);
   return t.toISOString().slice(0, 10);
 };
 
 // Split [start, end] (inclusive ISO dates) into windows of at most `size` days.
-export function ranges(start, end, size) {
-  const out = [];
+export function ranges(start: string, end: string, size: number): [string, string][] {
+  const out: [string, string][] = [];
   for (let s = start; s <= end; s = addDays(s, size)) out.push([s, addDays(s, size - 1) < end ? addDays(s, size - 1) : end]);
   return out;
 }
 
 // "HH:MM" wall-clock time from Garmin's local timestamp, which the spec types only as a string:
 // an ISO-like string is read as written, and epoch milliseconds are taken as already shifted to local time.
-export function clock(ts) {
+export function clock(ts: string | number | null | undefined): string | null {
   if (ts == null || ts === '') return null;
   const m = /[T\s](\d{2}):(\d{2})/.exec(String(ts));
   if (m) return `${m[1]}:${m[2]}`;
@@ -60,16 +62,21 @@ export function clock(ts) {
   return Number.isFinite(ms) && ms > 1e11 ? new Date(ms).toISOString().slice(11, 16) : null;
 }
 
-const hours = (s) => (s == null ? null : Math.round((s / 3600) * 100) / 100);
+const hours = (s: number | null | undefined): number | null => (s == null ? null : Math.round((s / 3600) * 100) / 100);
 
-export function normalize({ daily = [], hrv = [], sleep = [], acts = [] }) {
-  const by = new Map();
-  const row = (date) => by.get(date) ?? by.set(date, { date }).get(date);
+export function normalize({ daily = [], hrv = [], sleep = [], acts = [] }: Partial<RawInput>): { days: Day[]; activities: Activity[]; skipped: Skipped } {
+  const by = new Map<string, Day>();
+  const row = (date: string): Day => {
+    let r = by.get(date);
+    if (!r) by.set(date, (r = { date }));
+    return r;
+  };
   // Records without a date can't be placed on the timeline; count them instead of crashing.
-  const skipped = { daily: 0, hrv: 0, sleep: 0, activities: 0 };
-  const dated = (list, key) => list.filter((x) => x?.calendarDate || (skipped[key]++, false));
+  const skipped: Skipped = { daily: 0, hrv: 0, sleep: 0, activities: 0 };
+  const dated = <T extends { calendarDate?: string | null }>(list: (T | null)[], key: keyof Skipped): (T & { calendarDate: string })[] =>
+    list.filter((x): x is T & { calendarDate: string } => !!x?.calendarDate || (skipped[key]++, false));
 
-  for (const d of dated(daily, 'daily')) {
+  for (const d of dated<RawDaily>(daily, 'daily')) {
     const im = d.intensityMinutes;
     Object.assign(row(d.calendarDate), {
       steps: d.movement?.steps ?? null,
@@ -82,8 +89,8 @@ export function normalize({ daily = [], hrv = [], sleep = [], acts = [] }) {
       bbLow: d.bodyBattery?.minValue ?? null,
     });
   }
-  for (const h of dated(hrv, 'hrv')) Object.assign(row(h.calendarDate), { hrv: h.lastNightAvg ?? null, hrvWeekly: h.weeklyAvg ?? null });
-  for (const s of dated(sleep, 'sleep')) {
+  for (const h of dated<RawHrv>(hrv, 'hrv')) Object.assign(row(h.calendarDate), { hrv: h.lastNightAvg ?? null, hrvWeekly: h.weeklyAvg ?? null });
+  for (const s of dated<RawSleep>(sleep, 'sleep')) {
     Object.assign(row(s.calendarDate), {
       sleepH: hours(s.sleepTimeSeconds),
       deepH: hours(s.deepSleepSeconds),
@@ -96,46 +103,48 @@ export function normalize({ daily = [], hrv = [], sleep = [], acts = [] }) {
     });
   }
 
-  const activities = acts.filter((a) => a?.startTimeLocal || (skipped.activities++, false)).map((a) => ({
-    id: a.activityId,
-    date: String(a.startTimeLocal).slice(0, 10),
-    name: a.activityName ?? '',
-    type: a.activityType?.typeKey ?? '',
-    minutes: a.duration == null ? null : Math.round(a.duration / 60),
-    km: a.distance == null ? null : Math.round(a.distance / 10) / 100,
-    avgHr: a.averageHR ?? null,
-    load: a.activityTrainingLoad ?? null,
-    te: a.aerobicTrainingEffect ?? null,
-    zones: [1, 2, 3, 4, 5].map((i) => a[`hrTimeInZone_${i}`] ?? 0), // seconds
-  }));
+  const activities = acts
+    .filter((a): a is RawActivity => !!a?.startTimeLocal || (skipped.activities++, false))
+    .map((a): Activity => ({
+      id: a.activityId,
+      date: String(a.startTimeLocal).slice(0, 10),
+      name: a.activityName ?? '',
+      type: a.activityType?.typeKey ?? '',
+      minutes: a.duration == null ? null : Math.round(a.duration / 60),
+      km: a.distance == null ? null : Math.round(a.distance / 10) / 100,
+      avgHr: a.averageHR ?? null,
+      load: a.activityTrainingLoad ?? null,
+      te: a.aerobicTrainingEffect ?? null,
+      zones: [a.hrTimeInZone_1, a.hrTimeInZone_2, a.hrTimeInZone_3, a.hrTimeInZone_4, a.hrTimeInZone_5].map((s) => s ?? 0), // seconds
+    }));
 
   return { days: [...by.values()].sort((a, b) => a.date.localeCompare(b.date)), activities, skipped };
 }
 
 // Sequential within one endpoint (gentle on unknown rate limits); endpoints run in parallel.
-const windows = async (start, end, size, call) => {
-  const out = [];
+const windows = async <T>(start: string, end: string, size: number, call: (s: string, e: string) => Promise<T>): Promise<T[]> => {
+  const out: T[] = [];
   for (const [s, e] of ranges(start, end, size)) out.push(await call(s, e));
   return out;
 };
 
 // The browser sends its local date so "today" is right in any timezone; anything invalid, or more than a day
 // away from UTC (no timezone is further), is ignored in favour of the UTC date.
-export function pickToday(param, now = new Date()) {
+export function pickToday(param: string | null | undefined, now = new Date()): string {
   const utc = now.toISOString().slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(param ?? '')) return utc;
+  if (param == null || !/^\d{4}-\d{2}-\d{2}$/.test(param)) return utc;
   const t = Date.parse(`${param}T00:00:00Z`);
   if (Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== param) return utc; // rejects 2026-02-31
   return Math.abs(t - Date.parse(`${utc}T00:00:00Z`)) <= 86400e3 ? param : utc;
 }
 
-export async function fetchRaw(days, end = new Date().toISOString().slice(0, 10)) {
+export async function fetchRaw(days: number, end = new Date().toISOString().slice(0, 10)): Promise<RawInput> {
   const start = addDays(end, -(days - 1));
 
-  const activities = async () => {
-    const all = [];
+  const activities = async (): Promise<RawActivity[]> => {
+    const all: RawActivity[] = [];
     for (let offset = 0; offset < 2000; offset += 99) {
-      const page = (await get('/activitylist-service/activities/search/activities', { startDate: start, endDate: end, start: offset, limit: 99 })) ?? [];
+      const page = (await get<RawActivity[]>('/activitylist-service/activities/search/activities', { startDate: start, endDate: end, start: offset, limit: 99 })) ?? [];
       all.push(...page);
       if (page.length < 99) break;
     }
@@ -143,9 +152,9 @@ export async function fetchRaw(days, end = new Date().toISOString().slice(0, 10)
   };
 
   const [daily, hrv, sleep, acts] = await Promise.all([
-    get('/usersummary-service/v2/dailysummaries', { startDate: start, endDate: end }),
-    windows(start, end, 28, (s, e) => get(`/hrv-service/hrv/daily/${s}/${e}`)),
-    windows(start, end, 30, (s, e) => get('/sleep-service/sleep/dailySleepSummariesByDate', { startDate: s, endDate: e })),
+    get<{ data?: RawDaily[] }>('/usersummary-service/v2/dailysummaries', { startDate: start, endDate: end }),
+    windows(start, end, 28, (s, e) => get<{ hrvSummaries?: RawHrv[] }>(`/hrv-service/hrv/daily/${s}/${e}`)),
+    windows(start, end, 30, (s, e) => get<RawSleep[]>('/sleep-service/sleep/dailySleepSummariesByDate', { startDate: s, endDate: e })),
     activities(),
   ]);
 
@@ -157,10 +166,17 @@ export async function fetchRaw(days, end = new Date().toISOString().slice(0, 10)
   };
 }
 
-export const fetchAll = async (days, end) => normalize(await fetchRaw(days, end));
+export const fetchAll = async (days: number, end?: string): Promise<{ days: Day[]; activities: Activity[]; skipped: Skipped }> =>
+  normalize(await fetchRaw(days, end));
 
 // Field names and value types only, never values, so it is safe to paste when diagnosing a mismatch with the spec.
-const kind = (v, depth = 0) =>
+const kind = (v: unknown, depth = 0): unknown =>
   v === null ? 'null' : Array.isArray(v) ? `array(${v.length})` : typeof v === 'object' ? (depth < 1 ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, kind(x, depth + 1)])) : 'object') : typeof v;
-export const shape = (raw) =>
-  Object.fromEntries(Object.entries(raw).map(([k, list]) => [k, { count: list.length, first: kind(list[0] ?? null), nullDates: list.filter((x) => !(x?.calendarDate || x?.startTimeLocal)).length }]));
+type DatedRow = { calendarDate?: unknown; startTimeLocal?: unknown };
+export const shape = (raw: RawInput): Record<string, { count: number; first: unknown; nullDates: number }> =>
+  Object.fromEntries(
+    (Object.entries(raw) as [string, (DatedRow | null)[]][]).map(([k, list]) => [
+      k,
+      { count: list.length, first: kind(list[0] ?? null), nullDates: list.filter((x) => !(x?.calendarDate || x?.startTimeLocal)).length },
+    ]),
+  );

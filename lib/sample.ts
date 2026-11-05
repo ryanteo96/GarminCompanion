@@ -1,21 +1,22 @@
 import { addDays } from './garmin.js';
+import type { Activity, Day } from './types.js';
 
 // Bed at about 23:00 (+/- drift), wake after sleep plus a little awake time.
-function bedWake(sleepH, driftMin) {
+function bedWake(sleepH: number, driftMin: number): { bedtime: string; wake: string } {
   const bed = (23 * 60 + Math.round(driftMin) + 1440) % 1440;
   const wake = (bed + Math.round(sleepH * 60 * 1.07)) % 1440;
-  const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  const hhmm = (m: number): string => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
   return { bedtime: hhmm(bed), wake: hhmm(wake) };
 }
 
 // Deterministic demo data in the same shape as normalize(). HRV is wired to sleep and prior-day
 // load so the Insights tab has real structure to find.
-export function sample(n, today = new Date().toISOString().slice(0, 10)) {
+export function sample(n: number, today = new Date().toISOString().slice(0, 10)): { days: Day[]; activities: Activity[] } {
   let seed = 42;
-  const rnd = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
-  const noise = (s) => (rnd() - 0.5) * 2 * s;
-  const days = [];
-  const activities = [];
+  const rnd = (): number => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
+  const noise = (s: number): number => (rnd() - 0.5) * 2 * s;
+  const days: Day[] = [];
+  const activities: Activity[] = [];
   let id = 1;
   let prevLoad = 0;
   let prevSteps = 8000;
