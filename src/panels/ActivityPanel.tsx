@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { DayKey } from '../../lib/types.js';
+import type { DayKey, DayWithLoad } from '../../lib/types.js';
 import { alpha, bar, describe, line, trend, weekBars } from '../chart.js';
 import { ChartCard } from '../components/ChartCard.js';
 import { MetricCard } from '../components/MetricCard.js';
@@ -11,13 +11,40 @@ import { useStore } from '../store.js';
 
 const GOAL = 150; // Garmin's weekly intensity-minutes goal
 
+const avg28 = (days: DayWithLoad[], k: DayKey): number | null => mean(days.slice(-28).map((d) => d[k]));
+
+export function StepsCard({ days, n = 14 }: { days: DayWithLoad[]; n?: number }) {
+  return <MetricCard ink="steps" label={dayLabel(days, 'steps', 'Steps')} value={num(latest(days, 'steps'))} subs={[`7-day avg ${num(avg7(days, 'steps'))}`]} series={series14(days, 'steps', 'Steps', avg28(days, 'steps'), num, n)} />;
+}
+
+export function IntensityCard({ days }: { days: DayWithLoad[] }) {
+  const weeks = weekly(days, 'intensityMin');
+  const thisWeek = weeks.at(-1)?.v;
+  const partial = weekBars(weeks, days, '').last;
+  return (
+    <MetricCard
+      ink="int"
+      label="Intensity minutes"
+      value={num(thisWeek)}
+      unit="min"
+      subs={[`This week${partial ? ' so far' : ''}, goal ${GOAL}`, thisWeek != null && thisWeek < GOAL ? `${num(GOAL - thisWeek)} min to go` : '']}
+      pill={(thisWeek ?? 0) >= GOAL ? ['good', 'Goal reached'] : undefined}
+      progress={thisWeek == null ? null : thisWeek / GOAL}
+    />
+  );
+}
+
+export function StressCard({ days, n = 14 }: { days: DayWithLoad[]; n?: number }) {
+  return <MetricCard ink="stress" label={dayLabel(days, 'stress', 'Average stress')} value={num(latest(days, 'stress'))} subs={[`7-day avg ${num(avg7(days, 'stress'))}`]} series={series14(days, 'stress', 'Average stress', avg28(days, 'stress'), num, n)} />;
+}
+
 export function ActivityPanel() {
   const days = useStore((s) => s.days);
   const { token } = useLayout();
 
-  const { im, imBars, thisWeek } = useMemo(() => {
+  const { im, imBars } = useMemo(() => {
     const weeks = weekly(days, 'intensityMin');
-    return { im: weeks, imBars: weekBars(weeks, days, token('--ink-int')), thisWeek: weeks.at(-1)?.v };
+    return { im: weeks, imBars: weekBars(weeks, days, token('--ink-int')) };
   }, [days, token]);
 
   const spec = useMemo(() => {
@@ -43,23 +70,13 @@ export function ActivityPanel() {
     };
   }, [days, im, imBars, token]);
 
-  const avg28 = (k: DayKey): number | null => mean(days.slice(-28).map((d) => d[k]));
-
   return (
     <>
       <div className="metrics" id="k-activity">
-        <MetricCard ink="steps" label={dayLabel(days, 'steps', 'Steps')} value={num(latest(days, 'steps'))} subs={[`7-day avg ${num(avg7(days, 'steps'))}`]} series={series14(days, 'steps', 'Steps', avg28('steps'))} />
-        <MetricCard
-          ink="int"
-          label="Intensity minutes"
-          value={num(thisWeek)}
-          unit="min"
-          subs={[`This week${imBars.last ? ' so far' : ''}, goal ${GOAL}`, thisWeek != null && thisWeek < GOAL ? `${num(GOAL - thisWeek)} min to go` : '']}
-          pill={(thisWeek ?? 0) >= GOAL ? ['good', 'Goal reached'] : undefined}
-          progress={thisWeek == null ? null : thisWeek / GOAL}
-        />
-        <MetricCard ink="cal" label={dayLabel(days, 'calories', 'Calories burned')} value={num(latest(days, 'calories'))} subs={[`7-day avg ${num(avg7(days, 'calories'))}`]} series={series14(days, 'calories', 'Calories', avg28('calories'))} />
-        <MetricCard ink="stress" label={dayLabel(days, 'stress', 'Average stress')} value={num(latest(days, 'stress'))} subs={[`7-day avg ${num(avg7(days, 'stress'))}`]} series={series14(days, 'stress', 'Average stress', avg28('stress'))} />
+        <StepsCard days={days} />
+        <IntensityCard days={days} />
+        <MetricCard ink="cal" label={dayLabel(days, 'calories', 'Calories burned')} value={num(latest(days, 'calories'))} subs={[`7-day avg ${num(avg7(days, 'calories'))}`]} series={series14(days, 'calories', 'Calories', avg28(days, 'calories'))} />
+        <StressCard days={days} />
       </div>
       <p className="scope">Charts follow the chart range. The cards use the latest day and the current week.</p>
       <div className="grid">

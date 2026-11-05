@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { Activity, DayWithLoad } from '../../lib/types.js';
 import { bar, describe, line, weekBars } from '../chart.js';
 import { ChartCard } from '../components/ChartCard.js';
@@ -15,9 +15,7 @@ const newestFirst = (a: Activity, b: Activity): number => b.date.localeCompare(a
 const ZONE_NAMES = ['Z1 Warm-up', 'Z2 Easy', 'Z3 Aerobic', 'Z4 Threshold', 'Z5 Maximum'];
 const ZONE_TOKENS = ['--z1', '--z2', '--z3', '--z4', '--z5'];
 
-function LoadHero({ last, activities, since }: { last: LoadPoint; activities: Activity[]; since: (n: number) => string }) {
-  const s = loadSummary(last);
-  const ratio = last.ratio;
+export function Sessions({ activities, since }: { activities: Activity[]; since: (n: number) => string }) {
   const week = activities.filter((a) => a.date >= since(7));
   const hours = week.reduce((t, a) => t + (a.minutes ?? 0), 0) / 60;
   const three = [...activities].sort(newestFirst).slice(0, 3);
@@ -25,18 +23,36 @@ function LoadHero({ last, activities, since }: { last: LoadPoint; activities: Ac
     ? `Your last ${three.length} session${three.length === 1 ? '' : 's'}: ${week.length ? `${week.length} in the last 7 days, ${num(hours, 1)} h` : 'none in the last 7 days'}`
     : 'No sessions recorded in this range';
   return (
+    <div className="sessions-wrap">
+      <h3 id="sessions-h" className="cap">{heading}</h3>
+      <ul id="sessions" className="sessions" aria-labelledby="sessions-h">
+        {three.map((a) => (
+          <SessionItem key={a.id} a={a} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function LoadHero({ last, compact, children }: { last: LoadPoint; compact?: boolean; children?: ReactNode }) {
+  const s = loadSummary(last);
+  const ratio = last.ratio;
+  return (
     <Hero
       id="load"
       headingId="load-h"
+      compact={compact}
       state={s.tone}
       tone={s.tone}
       verdict={s.head}
       detail={s.detail}
       main={
-        <details className="how">
-          <summary>What is training load?</summary>
-          <p>Training load is the score Garmin gives each activity for how demanding it was, added up over a week. The ratio divides your last 7 days by your usual week (your 28-day total divided by 4). Under 0.8 is lighter than usual, up to 1.3 your sweet spot, up to 1.5 ramping up, and above that spiking. It describes your own recent pattern, not a limit, and it is not medical advice.</p>
-        </details>
+        compact ? undefined : (
+          <details className="how">
+            <summary>What is training load?</summary>
+            <p>Training load is the score Garmin gives each activity for how demanding it was, added up over a week. The ratio divides your last 7 days by your usual week (your 28-day total divided by 4). Under 0.8 is lighter than usual, up to 1.3 your sweet spot, up to 1.5 ramping up, and above that spiking. It describes your own recent pattern, not a limit, and it is not medical advice.</p>
+          </details>
+        )
       }
       score={
         <div className="today-score" id="load-score" hidden={ratio == null}>
@@ -66,14 +82,7 @@ function LoadHero({ last, activities, since }: { last: LoadPoint; activities: Ac
         </div>
       }
     >
-      <div className="sessions-wrap">
-        <h3 id="sessions-h" className="cap">{heading}</h3>
-        <ul id="sessions" className="sessions" aria-labelledby="sessions-h">
-          {three.map((a) => (
-            <SessionItem key={a.id} a={a} />
-          ))}
-        </ul>
-      </div>
+      {children}
     </Hero>
   );
 }
@@ -113,7 +122,9 @@ export function TrainingPanel() {
 
   return (
     <>
-      <LoadHero last={last} activities={activities} since={since} />
+      <LoadHero last={last}>
+        <Sessions activities={activities} since={since} />
+      </LoadHero>
       <p className="scope">Charts follow the chart range. The load summary above uses the last 7 and 28 days.</p>
       <div className="grid">
         <ChartCard caption={spec.wloadCaption} captionId="cap-wload" canvasId="c-wload" type="bar" {...spec.wload} />
