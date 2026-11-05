@@ -10,13 +10,14 @@ Success means:
 
 - Everything is TypeScript (`strict`), including `api/` and `lib/`. `npm run typecheck` passes.
 - `npm run lint` (ESLint, `--max-warnings 0`) passes, including the React hooks and accessibility rules.
+- A production deployment is held off the production domain until the CI jobs `check` and `e2e` pass (Vercel Deployment Checks).
 - The payload contract between `normalize()` and the UI is one shared type, so a field rename fails to compile on both sides.
 - The existing unit assertions all still pass, and a new Playwright suite, first proven against the current app, passes against the new one.
 - Deploy on Vercel still works with the same env vars, the same routes and the same CSP.
 
 ## Non-goals
 
-Redesign or new features; changes to the API contract, auth, or Garmin mapping logic; SSR; component (DOM) unit tests; `react-chartjs-2`; browsers other than Chromium in e2e; a formatter (Prettier); CI configuration (the repo has none today).
+Redesign or new features; changes to the API contract, auth, or Garmin mapping logic; SSR; component (DOM) unit tests; `react-chartjs-2`; browsers other than Chromium in e2e; a formatter (Prettier).
 
 ## Decisions (made with the project owner)
 
@@ -29,6 +30,7 @@ Redesign or new features; changes to the API contract, auth, or Garmin mapping l
 | Context | One `LayoutContext` for chart layout |
 | Unit tests | Vitest (keeps `node:assert/strict`) |
 | E2E tests | Playwright, Chromium only |
+| Deploy gate | Vercel Deployment Checks on the GitHub Actions jobs `check` and `e2e` |
 
 ## Layout
 
@@ -50,6 +52,7 @@ api/                  data.ts, login.ts, logout.ts   (same routes)
 lib/                  auth.ts, garmin.ts, http.ts, sample.ts, types.ts
 tests/                app.test.ts (Vitest)
 e2e/                  *.spec.ts (Playwright)
+.github/workflows/    ci.yml: the check and e2e jobs
 vite.config.ts        react plugin, dev/preview API plugin, Vitest config
 playwright.config.ts
 eslint.config.js      flat config: typescript-eslint, react-hooks, jsx-a11y
@@ -85,7 +88,7 @@ Helpers that read `state` today (`latest`, `avg7`, `newest`, `withAge`, `dayLabe
 
 - Scripts: `dev` (Vite, `.env` loaded with `--env-file-if-exists` as now), `build` (`vite build`), `typecheck` (`tsc --noEmit`), `lint` (`eslint . --max-warnings 0`), `test` (`vitest run`), `check` (typecheck, lint, then test), `test:e2e` (`playwright test`).
 - A Vite plugin implements `configureServer` and `configurePreviewServer`: it loads `api/*.ts` handlers, 404s unknown `/api/*` routes, and in preview applies the headers from `vercel.json` so the production CSP is exercised.
-- `vercel.json` gains `buildCommand: "vite build"` and `outputDirectory: "dist"`; the CSP and other headers are unchanged. Vercel compiles `api/*.ts` natively. The README's "Framework preset: Other, no build command" becomes Vite with that build command.
+- `vercel.json` gains `buildCommand: "vite build"` and `outputDirectory: "dist"`; the CSP and other headers are unchanged. Vercel compiles `api/*.ts` natively. The README's "Framework preset: Other, no build command" becomes Vite with that build command, and its Deploy section documents the Deployment Checks setup (see "CI and deployment gate").
 - The production build must contain no inline script or style (`style-src 'self'`; React sets styles through the DOM as `app.js` does). Vite and plugin versions are chosen to work with the declared `engines.node >= 20`.
 - New dependencies: `react`, `react-dom`, `react-router`, `zustand`, `chart.js`. New dev dependencies: `vite`, `@vitejs/plugin-react`, `typescript`, `vitest`, `@playwright/test`, `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`, `@types/react`, `@types/react-dom`, `@types/node`.
 
@@ -120,18 +123,31 @@ Helpers that read `state` today (`latest`, `avg7`, `newest`, `withAge`, `dayLabe
 - At 320 px there is no horizontal overflow.
 - No CSP violations against the production build.
 
+## CI and deployment gate
+
+`.github/workflows/ci.yml` runs on every `push` and `pull_request`, with in-progress runs on the same ref cancelled. It needs no secrets: the e2e job runs the app in demo mode. It has two jobs, named exactly `check` and `e2e`, because Vercel matches checks by job name.
+
+- `check`: Node 20 (matching `engines`), `npm ci`, `npm run check`. This needs a committed `package-lock.json`, which step 1 creates.
+- `e2e`: `npm ci`, `npx playwright install --with-deps chromium`, `npm run test:e2e`. The Playwright report is uploaded as an artifact when the job fails.
+
+**Gate: Vercel Deployment Checks.** In the Vercel project's Deployment Checks settings, `check` and `e2e` from GitHub are added as required. Vercel then builds each production deployment but holds it off the production domains until both pass. A failing commit on `main` still lands on GitHub, but the live site stays on the last good deployment. Preview deployments are not gated. This needs the Vercel GitHub integration (already in use) and automatic production aliasing left on.
+
+This setting lives in Vercel's UI, not the repo, so the README's Deploy section lists the click-through steps. It is added only after `react-ts` is merged and `ci.yml` exists on `main`: a required check that never reports would hold every production deployment forever. Plan availability is not confirmed by the docs I found (a changelog entry says all GitHub-connected projects), so confirm it on the settings page. The gate is verified once on purpose: push a commit that fails `check` (a lint error) to `main`, confirm the deployment stays off the production domain, then revert.
+
 ## Migration order
 
 Work happens on the `react-ts` branch; each step ends with `npm run check` green and a commit.
 
 1. Tooling: `package.json`, `tsconfig`, `vite.config`, dependencies, Vitest, Playwright and ESLint (with its config) installed.
 1b. E2E suite written against the **current** app, run from a git worktree of `main` on another port via `E2E_BASE_URL`. This pins today's behavior before anything moves.
+1c. CI workflow `.github/workflows/ci.yml` with the `check` job, so every later push is checked remotely. The `e2e` job is added in step 7, once the suite has a new app to run against (in CI it builds and previews the app itself; it cannot reach the old app in the worktree).
 2. Backend to TS (`lib/`, `api/`, `types.ts`); dev/preview plugin replaces `dev.js`; tests ported.
 3. Logic to TS under `src/logic/`; format and day helpers extracted.
 4. Store, cache and fetch, with store tests.
 5. App shell: gates, router, tabs, header, notice, `LayoutContext`.
 6. Panels one at a time: Recovery (with Hero, MetricCard, ChartCard, NightBar), Training, Activity, Insights.
 7. Delete `public/app.js`, the old `index.html`, the vendored Chart.js and `dev.js`; update README and `vercel.json`. The full e2e suite must pass against the new app.
+8. After `react-ts` is merged to `main`, add `check` and `e2e` under Vercel's Deployment Checks (a manual step in Vercel's UI) and verify the gate once as described above.
 
 ## Parity check
 
@@ -143,3 +159,5 @@ Beyond the e2e gate, a one-off script (scratchpad, not committed, using the inst
 - Focus handoff after login/retry and `document.title` under hash routing are the likeliest behavioral drifts; both are covered by e2e.
 - Chart rebuild timing now depends on the layout key; checked in the parity pass.
 - Chromium for Playwright is roughly 150 MB to download.
+- Deployment Checks match jobs by name. Renaming `check` or `e2e`, or dropping the `push` trigger, leaves production deployments held until the Vercel setting is updated.
+- Deployment Checks plan availability is unconfirmed; check the settings page before relying on the gate.
