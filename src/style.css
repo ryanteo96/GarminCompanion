@@ -177,7 +177,7 @@ figcaption, .cap { margin: 0 0 var(--sp-3); font-size: 0.875rem; font-weight: 60
 .stage-light { background: var(--sl-light); } .stage-awake { background: var(--sl-awake); }
 
 /* ---- Tables, sessions, insights ---- */
-.tablewrap { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--rule) transparent; }
+.tablewrap { position: relative; /* contains the .sr-only spans inside, which are absolutely positioned and otherwise widen the page */ overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--rule) transparent; }
 table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 th, td { text-align: left; padding: var(--sp-2) var(--sp-2); border-bottom: 1px solid var(--rule); white-space: nowrap; }
 th { color: var(--mfg); font-weight: 600; } .num { text-align: right; }
