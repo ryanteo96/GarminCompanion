@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { patchData, signIn } from './helpers.js';
+import { patchData, signIn, watchErrors } from './helpers.js';
 
 test('the detail tabs keep their full heroes and cards', async ({ page }) => {
   await signIn(page);
@@ -70,6 +70,11 @@ test('the sheet reorders rows with the keyboard', async ({ page }) => {
   await page.keyboard.press('Space');
   await expect(dialog).toContainText('Resting HR dropped at position 2 of 10');
   expect((await rowTitles(page)).slice(0, 3)).toEqual(['Readiness', 'Resting HR', 'HRV']);
+  const order = () => page.locator('.home-grid [data-card]').evaluateAll((els) => els.map((el) => el.getAttribute('data-card')));
+  expect((await order()).slice(0, 3)).toEqual(['readiness', 'resting-hr', 'hrv']);
+  await page.reload();
+  await expect(page.locator('.home-grid [data-card]').first()).toBeVisible();
+  expect((await order()).slice(0, 3)).toEqual(['readiness', 'resting-hr', 'hrv']);
 });
 
 test('Escape during a drag cancels the drag, not the sheet', async ({ page }) => {
@@ -107,4 +112,20 @@ test('holding a row at the sheet edge does not make the sheet grow', async ({ pa
   await page.waitForTimeout(1200);
   expect(await height()).toBeLessThanOrEqual(before + 2);
   await page.mouse.up();
+});
+
+test('a saved layout is there on first paint and unknown ids are ignored', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('home-layout', '{"cards":["gone","stress","hrv"],"updatedAt":1}');
+    (window as unknown as { __sawReadiness: boolean }).__sawReadiness = false;
+    new MutationObserver(() => {
+      if (document.querySelector('[data-card="readiness"]')) (window as unknown as { __sawReadiness: boolean }).__sawReadiness = true;
+    }).observe(document, { subtree: true, childList: true });
+  });
+  await signIn(page);
+  await expect(page.locator('.home-grid [data-card]').first()).toBeVisible();
+  expect(await page.locator('.home-grid [data-card]').evaluateAll((els) => els.map((el) => el.getAttribute('data-card')))).toEqual(['stress', 'hrv']);
+  expect(await page.evaluate(() => (window as unknown as { __sawReadiness: boolean }).__sawReadiness)).toBe(false);
+  expect(errors).toEqual([]);
 });

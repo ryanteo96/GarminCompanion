@@ -1,8 +1,9 @@
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type Announcements, type DragEndEvent, type Modifier } from '@dnd-kit/core';
-import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useRef, useState, type Ref } from 'react';
+import { useHome } from './store.js';
 import { CARDS } from './cards.js';
-import { DEFAULT_CARDS, type CardId } from './layout.js';
+import type { CardId } from './layout.js';
 
 // Keeps the dragged row inside its list, vertically. A row dragged past the end would stretch the sheet's scroll
 // area and auto-scroll would then run away.
@@ -32,7 +33,8 @@ function Row({ id }: { id: CardId }) {
 
 export function CustomizeSheet({ ref }: { ref: Ref<HTMLDialogElement> }) {
   const [dialog, setDialog] = useState<HTMLDialogElement | null>(null);
-  const [items, setItems] = useState<CardId[]>([...DEFAULT_CARDS]);
+  const items = useHome((s) => s.cards);
+  const move = useHome((s) => s.move);
   const dragging = useRef(false);
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -52,7 +54,7 @@ export function CustomizeSheet({ ref }: { ref: Ref<HTMLDialogElement> }) {
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent): void => {
-    if (over && active.id !== over.id) setItems((cur) => arrayMove(cur, cur.indexOf(active.id as CardId), cur.indexOf(over.id as CardId)));
+    if (over && active.id !== over.id) move(items.indexOf(active.id as CardId), items.indexOf(over.id as CardId));
   };
 
   return (
