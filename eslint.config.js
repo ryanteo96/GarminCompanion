@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint';
 const files = ['**/*.{ts,tsx}'];
 
 export default defineConfig(
-  { ignores: ['dist', 'playwright-report', 'test-results', 'docs', '.impeccable', 'public', 'dev.js'] },
+  { ignores: ['dist', 'playwright-report', 'test-results', 'docs', '.impeccable'] },
   {
     files,
     extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
