@@ -42,6 +42,12 @@ export interface Activity {
   zones: number[];
 }
 
+// The Home card layout: shown card ids in order, and when it was last changed (ms since epoch). Shared by the UI and /api/layout.
+export interface HomeLayout {
+  cards: string[];
+  updatedAt: number;
+}
+
 export interface Skipped {
   daily: number;
   hrv: number;
