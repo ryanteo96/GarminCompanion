@@ -1,0 +1,3 @@
+# Home is customized by dragging Tiles in place, in an edit mode
+
+The owner reorders, hides and restores Tiles directly on the Home grid after turning on an edit mode with a button. Off, the grid is static and scrolls normally. On, each Tile shows a grip (touch drag area), a remove button and the others reflow live as one moves; hidden Tiles collect in a tray, with Done and Reset in the toolbar. This replaces the earlier plan for a modal Customize sheet, which was chosen because dragging tall Tiles fights page scrolling on a phone. We want the direct, app-drawer feel and accept that fight, limited by the grip and by the toggle so normal scrolling is never affected.
