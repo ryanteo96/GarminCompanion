@@ -1,11 +1,20 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { CARDS } from '../home/cards.js';
 import { CustomizeSheet } from '../home/CustomizeSheet.js';
-import { useHome } from '../home/store.js';
+import { flush, pull, useHome } from '../home/store.js';
 
 export function HomePanel() {
   const sheet = useRef<HTMLDialogElement>(null);
   const cards = useHome((s) => s.cards);
+
+  useEffect(() => {
+    void pull(() => sheet.current?.open ?? false);
+    addEventListener('pagehide', flush);
+    return () => {
+      removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, []);
   return (
     <>
       <button type="button" className="btn home-customize" onClick={() => sheet.current?.showModal()}>Customize</button>

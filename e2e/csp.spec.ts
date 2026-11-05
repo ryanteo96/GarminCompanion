@@ -23,6 +23,7 @@ test('the production build runs without CSP violations', async ({ page }) => {
   await page.getByRole('button', { name: 'Move HRV' }).focus();
   await page.keyboard.press('Space');
   await expect(dialog).toContainText('Picked up HRV');
+  await page.waitForTimeout(100); // dnd-kit starts listening for arrow keys one tick after the lift
   await page.keyboard.press('ArrowDown');
   await expect(dialog).toContainText('HRV moved to position 3 of 10');
   await page.keyboard.press('Space');

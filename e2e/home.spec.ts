@@ -64,7 +64,8 @@ test('the sheet reorders rows with the keyboard', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Customize Home' });
   await page.getByRole('button', { name: 'Move Resting HR' }).focus();
   await page.keyboard.press('Space');
-  await expect(dialog).toContainText('Picked up Resting HR, position 3 of 10'); // the sensor listens for arrows only after this
+  await expect(dialog).toContainText('Picked up Resting HR, position 3 of 10');
+  await page.waitForTimeout(100); // dnd-kit starts listening for arrow keys one tick after the lift; a person is never that fast
   await page.keyboard.press('ArrowUp');
   await expect(dialog).toContainText('Resting HR moved to position 2 of 10');
   await page.keyboard.press('Space');
@@ -86,6 +87,7 @@ test('Escape during a drag cancels the drag, not the sheet', async ({ page }) =>
   await page.getByRole('button', { name: 'Move Sleep' }).focus();
   await page.keyboard.press('Space');
   await expect(dialog).toContainText('Picked up Sleep, position 4 of 10');
+  await page.waitForTimeout(100); // as above
   await page.keyboard.press('ArrowDown');
   await expect(dialog).toContainText('Sleep moved to position 5 of 10');
   await page.keyboard.press('Escape');
@@ -173,4 +175,76 @@ test('hiding every card leaves a prompt', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Done' }).click();
   await expect(page.locator('.home-empty')).toContainText(/Use Customize/);
   await expect(page.locator('.home-grid [data-card]')).toHaveCount(0);
+});
+
+// Stands in for /api/layout. `get` answers GET; PUTs are recorded and echoed back as stored.
+async function fakeServer(page: Page, get: () => object | Promise<{ status: number } | object>) {
+  const puts: { cards: string[]; updatedAt: number }[] = [];
+  await page.route('**/api/layout', async (route) => {
+    const method = route.request().method();
+    if (method === 'PUT') {
+      const body = route.request().postDataJSON() as { cards: string[]; updatedAt: number };
+      puts.push(body);
+      return route.fulfill({ json: { synced: true, layout: body } });
+    }
+    const answer = await get();
+    if ('status' in answer) return route.fulfill({ status: answer.status, json: { error: 'unauthorized' } });
+    return route.fulfill({ json: answer });
+  });
+  return puts;
+}
+
+test('a newer remote layout is adopted on entering Home', async ({ page }) => {
+  await fakeServer(page, () => ({ synced: true, layout: { cards: ['steps', 'hrv'], updatedAt: Date.now() } }));
+  await signIn(page);
+  await expect.poll(() => order(page)).toEqual(['steps', 'hrv']);
+  expect(await page.evaluate(() => localStorage.getItem('home-layout'))).toContain('"cards":["steps","hrv"]');
+});
+
+test('a newer local layout is sent', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('home-layout', '{"cards":["hrv"],"updatedAt":5000}'));
+  const puts = await fakeServer(page, () => ({ synced: true, layout: { cards: ['steps'], updatedAt: 1000 } }));
+  await signIn(page);
+  await expect.poll(() => puts).toEqual([{ cards: ['hrv'], updatedAt: 5000 }]);
+  expect(await order(page)).toEqual(['hrv']);
+});
+
+test('a change is sent after a pause', async ({ page }) => {
+  const puts = await fakeServer(page, () => ({ synced: false }));
+  await signIn(page);
+  await page.getByRole('button', { name: 'Customize' }).click();
+  await page.getByRole('switch', { name: 'Show HRV' }).click();
+  await expect.poll(() => puts.length, { timeout: 2500 }).toBe(1);
+  expect(puts[0].cards).not.toContain('hrv');
+  expect(puts[0].updatedAt).toBeGreaterThan(0);
+});
+
+test('a remote layout that arrives while the sheet is open waits', async ({ page }) => {
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await fakeServer(page, async () => {
+    await held;
+    return { synced: true, layout: { cards: ['steps'], updatedAt: Date.now() + 1000 } };
+  });
+  await signIn(page);
+  await page.getByRole('button', { name: 'Customize' }).click();
+  const answered = page.waitForResponse('**/api/layout');
+  release();
+  await answered;
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(r)));
+  expect(await order(page)).toHaveLength(10);
+  await expect(page.getByRole('dialog', { name: 'Customize Home' }).locator('.sheet-shown .sheet-row')).toHaveCount(10);
+});
+
+test('a 401 from the layout calls is ignored', async ({ page }) => {
+  const sent: string[] = [];
+  page.on('request', (r) => r.url().endsWith('/api/layout') && r.method() === 'PUT' && sent.push('put'));
+  await page.route('**/api/layout', (route) => route.fulfill({ status: 401, json: { error: 'unauthorized' } }));
+  await signIn(page);
+  await page.getByRole('button', { name: 'Customize' }).click();
+  await page.getByRole('switch', { name: 'Show HRV' }).click();
+  await expect.poll(() => sent.length, { timeout: 2500 }).toBe(1);
+  await expect(page.getByRole('tab', { name: 'Home' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByLabel('Password', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('switch', { name: 'Show HRV' })).not.toBeChecked();
 });

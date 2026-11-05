@@ -1,3 +1,5 @@
+import type { HomeLayout } from '../../lib/types.js';
+
 // The Home cards and their default order. Pure: no React, so the layout functions can be tested without a browser.
 export const CARD_IDS = ['readiness', 'hrv', 'resting-hr', 'sleep', 'body-battery', 'load', 'sessions', 'steps', 'intensity', 'stress'] as const;
 export type CardId = (typeof CARD_IDS)[number];
@@ -20,3 +22,6 @@ export function sanitize<T extends string>(input: unknown, known: readonly T[]):
   const seen = new Set<unknown>();
   return input.filter((id): id is T => known.includes(id as T) && !seen.has(id) && !!seen.add(id));
 }
+
+// The newer of this device's layout and the server's; this device's on a tie.
+export const merge = <L extends HomeLayout>(local: L, remote: L | null): L => (remote && remote.updatedAt > local.updatedAt ? remote : local);
