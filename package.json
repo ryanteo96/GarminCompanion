@@ -2,9 +2,39 @@
   "name": "garmin-companion",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env dev.js",
-    "test": "node --test tests/*.test.js"
+    "dev": "node --env-file-if-exists=.env ./node_modules/vite/bin/vite.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "test:e2e": "playwright test",
+    "preview": "node --env-file-if-exists=.env ./node_modules/vite/bin/vite.js preview",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "chart.js": "^4.6.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^7.18.5",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript": "~6.0",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5",
+    "vitest": "^4.1.12"
   }
 }

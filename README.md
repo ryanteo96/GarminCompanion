@@ -1,22 +1,43 @@
 # Garmin Companion
 
-Personal fitness dashboard on the [Garmin Connect Personal API](https://developer.garmin.com/gc-developer-program/personal/personal-api): Recovery, Training, Activity and Insights tabs. Static page plus three tiny serverless functions, deployed on Vercel. Your Garmin key never reaches the browser.
+Personal fitness dashboard on the [Garmin Connect Personal API](https://developer.garmin.com/gc-developer-program/personal/personal-api): Recovery, Training, Activity and Insights tabs. A React + TypeScript single-page app plus three tiny serverless functions, deployed on Vercel. Your Garmin key never reaches the browser.
 
 ## Run locally
 
 ```bash
 cp .env.example .env   # set DASHBOARD_PASSWORD and SESSION_SECRET; leave GARMIN_API_KEY empty for demo data
-npm run dev            # http://localhost:3000
-npm test
+npm install
+npm run dev            # http://localhost:5173
 ```
 
 With no `GARMIN_API_KEY`, the app serves generated demo data and shows a "Demo data" badge.
 
+## Checks
+
+```bash
+npm run check          # typecheck, lint and unit tests (Vitest)
+npx playwright install chromium   # once
+npm run test:e2e       # end-to-end tests in a real browser (Playwright), against a production build
+```
+
+CI runs both on every push and pull request as two jobs, `check` and `e2e` (`.github/workflows/ci.yml`).
+
 ## Deploy on Vercel
 
-1. Import this repo in Vercel (Framework preset: Other, no build command).
+1. Import this repo in Vercel. Framework preset: **Vite** (build command `vite build`, output directory `dist`; both are also set in `vercel.json`). The files in `api/` deploy as serverless functions.
 2. Add environment variables: `GARMIN_API_KEY`, `DASHBOARD_PASSWORD`, `SESSION_SECRET`.
 3. Deploy. The page is public but empty; all data comes from `/api/data`, which needs the login cookie.
+4. Before this version's first production deploy, open its **preview deployment** and check that `/api/data` answers: HTTP 401 while signed out, and data after you sign in. That confirms Vercel compiled the TypeScript functions in `api/`, which can only be verified on Vercel (locally they run through Vite).
+
+### Block deployments until CI passes
+
+Vercel can hold a production deployment off your domain until named GitHub checks pass. This is a setting in the Vercel dashboard, not in this repo, so turn it on once:
+
+1. Merge this branch to `main` first, so the CI workflow exists there. A required check that never reports would hold every production deployment forever.
+2. In Vercel: your project, **Settings**, **Deployment Checks**. Add the GitHub checks **`check`** and **`e2e`** (the job names in `ci.yml`). Menu labels can differ between Vercel versions, and availability can depend on your plan.
+3. From then on each production deployment is built but is only assigned to your production domain once both checks pass. A failing commit still lands on `main`; the live site stays on the last good deployment. Preview deployments are not held.
+
+If you rename a job in `ci.yml` or stop it running on `push`, update the setting too.
 
 ## Privacy
 
@@ -28,7 +49,13 @@ Garmin Connect Web > Personal API Key > Create Key. The key is shown once and ex
 
 ## Layout
 
-- `api/login.js`, `api/data.js`: password login (signed HttpOnly cookie) and the data endpoint
-- `lib/garmin.js`: token exchange, date-window chunking, field mapping
-- `lib/sample.js`: demo data
-- `public/`: page, styles, Chart.js (vendored), `stats.js` (readiness, load ratio, correlations)
+- `index.html`, `src/`: the React app
+  - `main.tsx` / `App.tsx`: startup, routing (hash routes such as `/#/training`), and the loading / login / error / dashboard views
+  - `store.ts`, `data/`: Zustand store, fetching, and the per-range local cache
+  - `panels/`, `components/`: one panel per tab, and the shared cards, charts and controls
+  - `logic/`: readiness, load ratio, correlations and formatting (pure functions)
+  - `chart.ts`, `layout.tsx`: Chart.js dataset builders, and the colour-scheme / width context that rebuilds charts
+- `api/login.ts`, `api/data.ts`, `api/logout.ts`: password login (signed HttpOnly cookie), the data endpoint, and sign-out
+- `lib/`: `garmin.ts` (token exchange, date-window chunking, field mapping), `sample.ts` (demo data), `types.ts` (the payload shared with the app)
+- `tools/api-plugin.ts`: serves `api/` under `npm run dev` and `npm run preview`
+- `tests/`: unit tests; `e2e/`: browser tests
