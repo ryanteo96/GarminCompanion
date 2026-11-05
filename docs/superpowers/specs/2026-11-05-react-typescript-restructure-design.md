@@ -9,13 +9,14 @@ Move Garmin Companion from vanilla JS (no build step, imperative DOM in `public/
 Success means:
 
 - Everything is TypeScript (`strict`), including `api/` and `lib/`. `npm run typecheck` passes.
+- `npm run lint` (ESLint, `--max-warnings 0`) passes, including the React hooks and accessibility rules.
 - The payload contract between `normalize()` and the UI is one shared type, so a field rename fails to compile on both sides.
 - The existing unit assertions all still pass, and a new Playwright suite, first proven against the current app, passes against the new one.
 - Deploy on Vercel still works with the same env vars, the same routes and the same CSP.
 
 ## Non-goals
 
-Redesign or new features; changes to the API contract, auth, or Garmin mapping logic; SSR; component (DOM) unit tests; `react-chartjs-2`; browsers other than Chromium in e2e.
+Redesign or new features; changes to the API contract, auth, or Garmin mapping logic; SSR; component (DOM) unit tests; `react-chartjs-2`; browsers other than Chromium in e2e; a formatter (Prettier); CI configuration (the repo has none today).
 
 ## Decisions (made with the project owner)
 
@@ -51,6 +52,7 @@ tests/                app.test.ts (Vitest)
 e2e/                  *.spec.ts (Playwright)
 vite.config.ts        react plugin, dev/preview API plugin, Vitest config
 playwright.config.ts
+eslint.config.js      flat config: typescript-eslint, react-hooks, jsx-a11y
 tsconfig.json         strict
 public/               static assets only; vendored Chart.js deleted
 ```
@@ -81,13 +83,23 @@ Helpers that read `state` today (`latest`, `avg7`, `newest`, `withAge`, `dayLabe
 
 ## Build, dev and deploy
 
-- Scripts: `dev` (Vite, `.env` loaded with `--env-file-if-exists` as now), `build` (`vite build`), `typecheck` (`tsc --noEmit`), `test` (`vitest run`), `test:e2e` (`playwright test`).
+- Scripts: `dev` (Vite, `.env` loaded with `--env-file-if-exists` as now), `build` (`vite build`), `typecheck` (`tsc --noEmit`), `lint` (`eslint . --max-warnings 0`), `test` (`vitest run`), `check` (typecheck, lint, then test), `test:e2e` (`playwright test`).
 - A Vite plugin implements `configureServer` and `configurePreviewServer`: it loads `api/*.ts` handlers, 404s unknown `/api/*` routes, and in preview applies the headers from `vercel.json` so the production CSP is exercised.
 - `vercel.json` gains `buildCommand: "vite build"` and `outputDirectory: "dist"`; the CSP and other headers are unchanged. Vercel compiles `api/*.ts` natively. The README's "Framework preset: Other, no build command" becomes Vite with that build command.
 - The production build must contain no inline script or style (`style-src 'self'`; React sets styles through the DOM as `app.js` does). Vite and plugin versions are chosen to work with the declared `engines.node >= 20`.
-- New dependencies: `react`, `react-dom`, `react-router`, `zustand`, `chart.js`. New dev dependencies: `vite`, `@vitejs/plugin-react`, `typescript`, `vitest`, `@playwright/test`, `@types/react`, `@types/react-dom`, `@types/node`.
+- New dependencies: `react`, `react-dom`, `react-router`, `zustand`, `chart.js`. New dev dependencies: `vite`, `@vitejs/plugin-react`, `typescript`, `vitest`, `@playwright/test`, `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`, `@types/react`, `@types/react-dom`, `@types/node`.
 
 ## Testing
+
+**Static checks.** `npm run check` runs typecheck, lint and the unit tests in that order. The e2e suite stays a separate command because it needs a browser.
+
+- `tsc --noEmit` on `strict`.
+- ESLint (flat config) over `src/`, `api/`, `lib/`, `tests/`, `e2e/` and the config files; `dist/`, `playwright-report/`, `test-results/`, `docs/` and `.impeccable/` are ignored. Rule sets:
+  - `@eslint/js` recommended.
+  - `typescript-eslint` `recommendedTypeChecked`, so `no-floating-promises` and `no-misused-promises` guard the store's async actions and the fetch/abort code.
+  - `eslint-plugin-react-hooks`, with `rules-of-hooks` and `exhaustive-deps` as errors. This matters most for the chart effect and the layout-key memo deps.
+  - `eslint-plugin-jsx-a11y` recommended, covering tabs, live regions and labelled controls, which the design depends on.
+- Run with `--max-warnings 0`. The current JS has never been linted, so the port may surface real findings in `stats.ts` or `garmin.ts`; they are fixed in the step that ports the file, not silenced. An `eslint-disable` needs a one-line reason beside it.
 
 **Vitest** (`tests/**/*.test.ts`, default `node` environment). `tests/app.test.js` becomes `app.test.ts`; the only edit is `import { test } from 'vitest'` and the new import paths, and every assertion stays. The dev-server child-process 404 test is replaced by a handler-level test that the plugin 404s an unknown `/api/x`. New store tests, with `fetch` stubbed via `vi.stubGlobal` and a small in-memory `localStorage` stub (without it `cache.ts` would silently no-op and the stale-notice test would pass for the wrong reason):
 
@@ -110,9 +122,9 @@ Helpers that read `state` today (`latest`, `avg7`, `newest`, `withAge`, `dayLabe
 
 ## Migration order
 
-Work happens on the `react-ts` branch; each step ends with tests green and a commit.
+Work happens on the `react-ts` branch; each step ends with `npm run check` green and a commit.
 
-1. Tooling: `package.json`, `tsconfig`, `vite.config`, dependencies, Vitest and Playwright installed.
+1. Tooling: `package.json`, `tsconfig`, `vite.config`, dependencies, Vitest, Playwright and ESLint (with its config) installed.
 1b. E2E suite written against the **current** app, run from a git worktree of `main` on another port via `E2E_BASE_URL`. This pins today's behavior before anything moves.
 2. Backend to TS (`lib/`, `api/`, `types.ts`); dev/preview plugin replaces `dev.js`; tests ported.
 3. Logic to TS under `src/logic/`; format and day helpers extracted.
