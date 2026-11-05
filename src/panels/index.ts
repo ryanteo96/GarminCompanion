@@ -1,9 +1,10 @@
 import type { ComponentType } from 'react';
 import type { Tab } from '../tabs.js';
+import { RecoveryPanel } from './RecoveryPanel.js';
 
-// Each tab's content. The panels land one task at a time; until then a tab renders empty.
+// Each tab's content. The remaining panels land one task at a time; until then a tab renders empty.
 export const PANELS: Record<Tab, ComponentType> = {
-  recovery: () => null,
+  recovery: RecoveryPanel,
   training: () => null,
   activity: () => null,
   insights: () => null,

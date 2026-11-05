@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { patchData, signIn, watchErrors } from './helpers.js';
+import { expectDrawn, patchData, signIn, watchErrors } from './helpers.js';
 
-// A drawn chart carries its text summary as the canvas label, so the label proves the draw ran.
 async function expectCharts(page: Page, tab: string, count: number): Promise<void> {
   const errors = watchErrors(page);
   await signIn(page);
@@ -9,6 +8,7 @@ async function expectCharts(page: Page, tab: string, count: number): Promise<voi
   const canvases = page.locator('canvas:visible');
   await expect(canvases).toHaveCount(count);
   for (const canvas of await canvases.all()) await expect(canvas).toHaveAttribute('aria-label', /\S/);
+  await expectDrawn(canvases);
   await expect(page.getByText("Couldn't draw this view")).toHaveCount(0);
   expect(errors).toEqual([]);
 }

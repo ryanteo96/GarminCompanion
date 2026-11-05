@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export const PASSWORD = process.env.E2E_PASSWORD ?? 'e2e-password';
 export const LEGACY = !!process.env.E2E_LEGACY;
@@ -35,5 +35,21 @@ export async function patchData(page: Page, edit: (json: DataJson) => void): Pro
   });
 }
 
-export const cachedKeys = (page: Page): Promise<number> =>
+// A canvas Chart.js never drew on stays fully transparent, so one opaque pixel per canvas proves the charts rendered
+// (a label alone does not: the new build sets it in markup).
+export async function expectDrawn(canvases: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      canvases.evaluateAll((els) =>
+        els.every((el) => {
+          const c = el as HTMLCanvasElement;
+          const px = c.getContext('2d')?.getImageData(0, 0, c.width, c.height).data;
+          return !!px && px.some((v, i) => i % 4 === 3 && v > 0);
+        }),
+      ),
+    )
+    .toBe(true);
+}
+
+export const cachedKeys =(page: Page): Promise<number> =>
   page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('gc:data:')).length);

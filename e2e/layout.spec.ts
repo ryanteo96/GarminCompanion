@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { LEGACY, signIn, TAB_NAMES, watchErrors } from './helpers.js';
+import { expectDrawn, LEGACY, signIn, TAB_NAMES, watchErrors } from './helpers.js';
 
 test('no horizontal overflow at 320 px', async ({ page }) => {
   // Known defect in the old app: the absolutely positioned .sr-only spans in the Insights table escape
@@ -23,6 +23,7 @@ test('charts rebuild after a resize and a dark-scheme switch', async ({ page }) 
   const canvases = page.locator('canvas:visible');
   await expect(canvases).toHaveCount(4);
   for (const canvas of await canvases.all()) await expect(canvas).toHaveAttribute('aria-label', /\S/);
+  await expectDrawn(canvases);
   await expect(page.getByText("Couldn't draw this view")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
