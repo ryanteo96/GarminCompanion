@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import type { Tab } from '../tabs.js';
+import { ActivityPanel } from './ActivityPanel.js';
 import { RecoveryPanel } from './RecoveryPanel.js';
 import { TrainingPanel } from './TrainingPanel.js';
 
@@ -7,6 +8,6 @@ import { TrainingPanel } from './TrainingPanel.js';
 export const PANELS: Record<Tab, ComponentType> = {
   recovery: RecoveryPanel,
   training: TrainingPanel,
-  activity: () => null,
+  activity: ActivityPanel,
   insights: () => null,
 };
