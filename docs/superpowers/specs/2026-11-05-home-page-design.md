@@ -36,14 +36,14 @@ New metrics or new cards beyond the ten below; resizing cards or free-form x/y p
 | Reorder | `@dnd-kit/core` + `@dnd-kit/sortable` (stable 6.3 / 10.0, React 19 within their peer range) on a plain vertical list. The newer `@dnd-kit/react` is 0.x and is not used |
 | Persistence | Neon Postgres, one row in a generic `settings` table. localStorage is the instant, offline copy |
 | Conflict rule | Newest `updatedAt` wins, on both client and server |
-| Sign-out | Does not clear the layout; it holds no health data |
+| Sign-out | `api/logout.ts` sends `Clear-Site-Data: "cache", "storage"`, so over HTTPS sign-out also wipes the local layout. That is accepted: the layout holds no health data and returns from the server on the next sign-in once sync exists (increment 3). Until then, signing out loses the layout |
 | Chart range control | Hidden on Home (nothing there follows it), along with its screen-reader note |
 
 ## Cards
 
 - Existing logic moves out of the panels into shared pieces that both the panels and the registry call, so nothing is duplicated:
   - `RecoveryPanel`: the `Today` hero becomes the `readiness` card; the `SIGNALS` loop body becomes one function building a `MetricCard` for a given signal (used for `hrv`, `resting-hr`, `sleep`, `body-battery`).
-  - `TrainingPanel`: `LoadHero` already takes its sessions list as `children`. The `load` card is that `Hero` without children; `sessions` is a card holding the same three `SessionItem`s. Training keeps its combined hero and is not made compact.
+  - `TrainingPanel`: `LoadHero` builds its sessions list itself, so it is split: the `load` card is the hero without the list, and a new `Sessions` component holds the same three `SessionItem`s (used by both the `sessions` card and Training). Training keeps its combined hero and is not made compact.
   - `ActivityPanel`: the steps, intensity and stress `MetricCard`s are extracted the same way (calories stays on Activity).
 - Each card computes what it needs (`readiness(days)` runs per card; it is cheap, and a shared context is not worth it).
 - Registry shape, in `src/home/cards.tsx`: `{ id, title, group: 'health' | 'training', span, Component }`. Ids match `^[a-z][a-z0-9-]{0,31}$`.
@@ -84,7 +84,7 @@ interface HomeLayout { cards: string[]; updatedAt: number } // updatedAt: Date.n
 ## Files
 
 - Add: `src/home/{cards.tsx,layout.ts,store.ts,CustomizeSheet.tsx}`, `src/panels/HomePanel.tsx`, `lib/settings.ts`, `api/layout.ts`, `tests/home.test.ts`, `tests/layout-api.test.ts`, `e2e/home.spec.ts`.
-- Change: `src/tabs.ts` (`home`, name "Home"), `src/panels/index.ts`, `src/components/Sidebar.tsx` (icon; its `ICONS` is `Record<Tab, …>`), `src/App.tsx` (redirect), `src/components/Dashboard.tsx` (the "all four tabpanels" comment), `src/components/Header.tsx` (hide the chart range on Home), `src/components/Hero.tsx` (`compact`), `src/logic/days.ts` and `src/components/Spark.tsx` (length parameter), the three panels (call the extracted pieces), `src/style.css` (a new phone-first Home section), `package.json` (`@dnd-kit/core`, `@dnd-kit/sortable`, `@neondatabase/serverless`), `.env.example`, `README.md`.
+- Change: `src/tabs.ts` (`home`, name "Home"), `src/panels/index.ts`, `src/components/Sidebar.tsx` (icon; its `ICONS` is `Record<Tab, …>`), `src/App.tsx:32` and `src/main.tsx:22` (both redirect to `/recovery`), `src/components/Dashboard.tsx` (the "all four tabpanels" comment), `src/components/Header.tsx` (hide the chart range on Home), `src/components/Hero.tsx` (`compact`), `src/logic/days.ts` (`series14` gains a length parameter; `Spark` already scales to its input), the three panels (call the extracted pieces), `src/style.css` (a new phone-first Home section), `package.json` (`@dnd-kit/core`, `@dnd-kit/sortable`, `@neondatabase/serverless`), `.env.example`, `README.md`.
 - E2E that enumerate tabs or assume the old default: `e2e/helpers.ts` (`TAB_NAMES`, and `signIn` expects the Recovery tab to be visible, which stays true), `e2e/tabs.spec.ts` (line 61 expects the fresh-visit URL to end in `#/recovery`), `e2e/csp.spec.ts`, `e2e/layout.spec.ts` (walks every tab through `TAB_NAMES`, so Home is covered once it is added there).
 
 ## Tests
