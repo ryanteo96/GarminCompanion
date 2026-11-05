@@ -6,12 +6,14 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env dev.js",
+    "dev": "node --env-file-if-exists=.env ./node_modules/vite/bin/vite.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "check": "npm run typecheck && npm run lint && npm test",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "preview": "node --env-file-if-exists=.env ./node_modules/vite/bin/vite.js preview",
+    "build": "vite build"
   },
   "dependencies": {
     "chart.js": "^4.6.1",
