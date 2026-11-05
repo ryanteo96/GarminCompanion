@@ -27,6 +27,7 @@ CI runs both on every push and pull request as two jobs, `check` and `e2e` (`.gi
 1. Import this repo in Vercel. Framework preset: **Vite** (build command `vite build`, output directory `dist`; both are also set in `vercel.json`). The files in `api/` deploy as serverless functions.
 2. Add environment variables: `GARMIN_API_KEY`, `DASHBOARD_PASSWORD`, `SESSION_SECRET`.
 3. Deploy. The page is public but empty; all data comes from `/api/data`, which needs the login cookie.
+4. Before this version's first production deploy, open its **preview deployment** and check that `/api/data` answers: HTTP 401 while signed out, and data after you sign in. That confirms Vercel compiled the TypeScript functions in `api/`, which can only be verified on Vercel (locally they run through Vite).
 
 ### Block deployments until CI passes
 

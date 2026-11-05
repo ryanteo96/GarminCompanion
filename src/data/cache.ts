@@ -15,10 +15,15 @@ export const saveCache = (days: number, payload: Payload): void => {
   } catch { /* storage full or blocked */ }
 };
 
+// The cache outlives deploys, so an entry written by an older shape of the app (or damaged) must read as "nothing cached".
+const isCached = (c: Partial<Cached> | null): c is Cached =>
+  typeof c?.savedAt === 'number' && Array.isArray(c.payload?.days) && Array.isArray(c.payload.activities);
+
 export const loadCache = (days: number): Cached | null => {
   try {
     const raw = localStorage.getItem(CACHE + String(days));
-    return raw ? (JSON.parse(raw) as Cached) : null;
+    const cached = raw ? (JSON.parse(raw) as Partial<Cached> | null) : null;
+    return isCached(cached) ? cached : null;
   } catch {
     return null;
   }

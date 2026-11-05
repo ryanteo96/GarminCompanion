@@ -180,3 +180,55 @@ test('sign out wipes the cache and says when the server was unreachable', async 
   assert.deepEqual(cachedKeys(), []);
   assert.match(state().loginError ?? '', /couldn't reach the server/);
 });
+
+// Review findings: the two ways the app could end up showing the wrong thing or no way forward.
+const unreadable = { demo: true, fetchedAt: '2026-11-04T12:00:00.000Z', days: [{ date: '2026-11-04' }] }; // a 200 with days but no activities
+
+test('a load still in flight when you sign out cannot bring the dashboard back', async () => {
+  vi.stubGlobal('fetch', () => reply(200, payload(30)));
+  await state().load();
+  assert.equal(state().view, 'app');
+  // The refresh's response arrives only after sign-out, and ignores the abort, as one already on its way would.
+  let release: () => void = () => undefined;
+  vi.stubGlobal('fetch', (url: string) =>
+    url === '/api/logout' ? reply(200, { ok: true }) : new Promise<Response>((resolve) => { release = () => resolve(new Response(JSON.stringify(payload(30)))); }),
+  );
+  const refresh = state().load();
+  await state().logout();
+  assert.equal(state().view, 'login');
+  release();
+  await refresh;
+  assert.equal(state().view, 'login', 'the late response is dropped');
+  assert.equal(state().days.length, 0);
+  assert.deepEqual(cachedKeys(), [], 'and it is not written back to the cache');
+  assert.equal(state().loading, false);
+});
+
+test('a cached payload that is not a payload is ignored instead of breaking the app', async () => {
+  localStorage.setItem('gc:data:90', JSON.stringify({ savedAt: 1, payload: { days: 'nope' } }));
+  vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')));
+  await state().load();
+  assert.equal(state().view, 'error', 'no usable cache, so the error view with a Retry, not the loading screen');
+  assert.equal(state().error?.status, 0);
+});
+
+test('a payload that cannot be read lands on an error you can retry, not on the loading screen', async () => {
+  vi.stubGlobal('fetch', () => reply(200, unreadable));
+  await state().load();
+  assert.equal(state().view, 'error');
+  assert.equal(state().error?.status, 'invalid');
+  assert.equal(state().loading, false);
+  vi.stubGlobal('fetch', () => reply(200, payload(30)));
+  await state().retry();
+  assert.equal(state().view, 'app');
+});
+
+test('a payload that cannot be read leaves the dashboard you already have and offers a retry', async () => {
+  vi.stubGlobal('fetch', () => reply(200, payload(30)));
+  await state().load();
+  vi.stubGlobal('fetch', () => reply(200, unreadable));
+  await state().load();
+  assert.equal(state().view, 'app');
+  assert.equal(state().days.length, 30, 'the good data stays');
+  assert.equal(state().notice?.retry, true);
+});

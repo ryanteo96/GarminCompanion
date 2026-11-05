@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Activity, DayWithLoad, Payload } from '../lib/types.js';
 import { loadCache, saveCache, wipeCache } from './data/cache.js';
-import { fetchData, type LoadError } from './data/fetchData.js';
+import { abortInflight, fetchData, type LoadError } from './data/fetchData.js';
 import { newest } from './logic/days.js';
 import { friendly } from './logic/errors.js';
 import { fmtStamp, localToday } from './logic/format.js';
@@ -48,6 +48,7 @@ export interface DashboardState extends Data {
 
 const NO_DATA: Data = { days: [], activities: [], demo: false };
 let running = 0; // loads in flight; the Refresh button stays disabled until the last one ends
+let epoch = 0; // bumped on sign-out: a load that began before it must not put data back on screen or in the cache
 
 export const useStore = create<DashboardState>()((set, get) => {
   function apply(j: Payload, stale: Stale | null): void {
@@ -70,11 +71,11 @@ export const useStore = create<DashboardState>()((set, get) => {
     });
   }
 
-  async function loadOnce(): Promise<void> {
+  async function loadOnce(began: number): Promise<void> {
     const { range } = get();
     if (!get().days.length) set({ view: 'boot' });
     let out = await fetchData(range);
-    if ('superseded' in out) return;
+    if ('superseded' in out || began !== epoch) return;
     if ('unauthorized' in out) {
       wipeCache();
       set({ ...NO_DATA, view: 'login', stale: null, notice: null, fresh: null });
@@ -106,10 +107,17 @@ export const useStore = create<DashboardState>()((set, get) => {
     loginError: null,
 
     async load() {
+      const began = epoch;
       running += 1;
       set({ loading: true });
       try {
-        await loadOnce();
+        await loadOnce(began);
+      } catch (e) {
+        // Data that arrived but cannot be read (a payload missing a field) must end on something you can retry, not on the loading screen.
+        if (began !== epoch) return;
+        const err: LoadError = { status: 'invalid', message: e instanceof Error ? e.message : String(e) };
+        if (get().days.length) set({ notice: { text: `${friendly(err)[0]}.`, retry: true } });
+        else set({ view: 'error', error: err });
       } finally {
         running -= 1;
         set({ loading: running > 0 });
@@ -135,6 +143,8 @@ export const useStore = create<DashboardState>()((set, get) => {
       }
     },
     async logout() {
+      epoch += 1;
+      abortInflight();
       let ended = true;
       try {
         ended = (await fetch('/api/logout', { method: 'POST' })).ok;

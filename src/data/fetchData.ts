@@ -2,13 +2,19 @@ import type { Payload } from '../../lib/types.js';
 import { localToday } from '../logic/format.js';
 
 export interface LoadError {
-  status: number | 'timeout' | 'empty';
+  /** A number is an HTTP status (0: the request never reached the server). 'invalid': the data arrived but could not be read. */
+  status: number | 'timeout' | 'empty' | 'invalid';
   message: string;
 }
 
 export type FetchOutcome = { j: Payload } | { err: LoadError } | { unauthorized: true } | { superseded: true };
 
 let inflight: AbortController | null = null;
+
+/** Cancels the request in flight, if any; its caller then sees `{ superseded: true }`. */
+export function abortInflight(): void {
+  inflight?.abort();
+}
 
 export async function fetchData(days: number): Promise<FetchOutcome> {
   inflight?.abort();
