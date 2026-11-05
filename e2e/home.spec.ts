@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { patchData, signIn } from './helpers.js';
 
 test('the detail tabs keep their full heroes and cards', async ({ page }) => {
@@ -51,4 +51,60 @@ test('Home cards say which day a reading is from', async ({ page }) => {
   await expect(page.locator('#today-chip')).toContainText(/not today/);
   await expect(page.locator('#today-date')).toBeHidden();
   await expect(page.locator('[data-card="hrv"]')).toContainText(/From /);
+});
+
+const phone = { width: 375, height: 667 };
+const rowTitles = (page: Page) => page.getByRole('dialog', { name: 'Customize Home' }).locator('.sheet-row .sheet-title').allTextContents();
+
+test('the sheet reorders rows with the keyboard', async ({ page }) => {
+  await page.setViewportSize(phone);
+  await signIn(page);
+  await page.getByRole('button', { name: 'Customize' }).click();
+  await expect(page.getByRole('dialog', { name: 'Customize Home' })).toBeVisible();
+  const dialog = page.getByRole('dialog', { name: 'Customize Home' });
+  await page.getByRole('button', { name: 'Move Resting HR' }).focus();
+  await page.keyboard.press('Space');
+  await expect(dialog).toContainText('Picked up Resting HR, position 3 of 10'); // the sensor listens for arrows only after this
+  await page.keyboard.press('ArrowUp');
+  await expect(dialog).toContainText('Resting HR moved to position 2 of 10');
+  await page.keyboard.press('Space');
+  await expect(dialog).toContainText('Resting HR dropped at position 2 of 10');
+  expect((await rowTitles(page)).slice(0, 3)).toEqual(['Readiness', 'Resting HR', 'HRV']);
+});
+
+test('Escape during a drag cancels the drag, not the sheet', async ({ page }) => {
+  await page.setViewportSize(phone);
+  await signIn(page);
+  const opener = page.getByRole('button', { name: 'Customize' });
+  await opener.click();
+  const dialog = page.getByRole('dialog', { name: 'Customize Home' });
+  await page.getByRole('button', { name: 'Move Sleep' }).focus();
+  await page.keyboard.press('Space');
+  await expect(dialog).toContainText('Picked up Sleep, position 4 of 10');
+  await page.keyboard.press('ArrowDown');
+  await expect(dialog).toContainText('Sleep moved to position 5 of 10');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toContainText('Moving Sleep cancelled');
+  await expect(dialog).toBeVisible();
+  expect((await rowTitles(page))[3]).toBe('Sleep');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test('holding a row at the sheet edge does not make the sheet grow', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 500 });
+  await signIn(page);
+  await page.getByRole('button', { name: 'Customize' }).click();
+  const sheet = page.locator('dialog.sheet');
+  const height = () => sheet.evaluate((el) => el.scrollHeight);
+  const before = await height();
+  const handle = (await page.getByRole('button', { name: 'Move HRV' }).boundingBox())!;
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 60, { steps: 6 });
+  await page.mouse.move(handle.x + handle.width / 2, 495, { steps: 6 });
+  await page.waitForTimeout(1200);
+  expect(await height()).toBeLessThanOrEqual(before + 2);
+  await page.mouse.up();
 });

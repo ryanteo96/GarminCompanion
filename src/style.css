@@ -183,6 +183,21 @@ figcaption, .cap { margin: 0 0 var(--sp-3); font-size: 0.875rem; font-weight: 60
   .home-cell[data-span="full"] .today.compact .verdict { font-size: 1.625rem; }
 }
 
+/* Customize sheet: a bottom sheet on a phone, a right-hand panel from 820px */
+.home-customize { margin-bottom: var(--sp-3); }
+.sheet { position: fixed; inset: auto 0 0; width: 100%; max-width: none; max-height: 85dvh; margin: 0; padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + env(safe-area-inset-bottom)); overflow-y: auto; color: var(--text); background: var(--panel); border: 1px solid var(--rule); border-radius: 14px 14px 0 0; }
+.sheet::backdrop { background: rgb(0 0 0 / 50%); }
+.sheet h2 { margin-bottom: var(--sp-2); font-size: 1.125rem; }
+.sheet-list { margin: 0 0 var(--sp-3); padding: 0; list-style: none; }
+.sheet-row { display: flex; align-items: center; gap: var(--sp-3); min-height: 44px; background: var(--panel); border-bottom: 1px solid var(--rule); }
+.sheet-row.dragging { position: relative; z-index: 1; background: var(--panel-2); }
+.sheet-handle { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; color: var(--mfg); background: none; border: 0; cursor: grab; touch-action: none; }
+.sheet-handle svg { width: 20px; height: 20px; fill: none; stroke: currentcolor; stroke-width: 3; stroke-linecap: round; }
+@media (min-width: 820px) {
+  .sheet { inset: 0 0 0 auto; width: 360px; height: 100dvh; max-height: none; border-radius: 0; }
+  .sheet::backdrop { background: transparent; }
+}
+
 /* ---- Last night ---- */
 .night { margin: 0 0 var(--sp-4); }
 .night-head { margin: 0 0 var(--sp-2); font-weight: 600; }
