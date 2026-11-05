@@ -37,3 +37,12 @@ _Avoid_: Training Readiness (Garmin's separate number)
 **Load**:
 The app's own measure of recent training against the owner's usual, built from Garmin's training load for each Session: the last 7 days compared with the 28-day norm. Not a Garmin number.
 _Avoid_: Training Load (Garmin's per-Session figure)
+
+## Analysis
+
+**Sport page**:
+A dedicated analysis page for one sport, such as running or strength.
+
+**Impact**:
+How the Signals change after a kind of Session, compared with the owner's usual. An association, not a cause.
+_Avoid_: Effect (implies cause)
