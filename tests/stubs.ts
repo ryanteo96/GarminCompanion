@@ -1,3 +1,6 @@
+import type { ServerResponse } from 'node:http';
+import type { Handler, Req } from '../lib/http.js';
+
 // In-memory stand-ins for the browser's localStorage. Methods are non-enumerable so Object.keys() lists only stored keys, as it does in a browser.
 export function memoryStorage(): Storage {
   const items: Record<string, string> = {};
@@ -19,3 +22,20 @@ export function throwingStorage(): Storage {
   };
   return new Proxy({}, { get: fail, set: fail, ownKeys: fail, has: fail, getOwnPropertyDescriptor: fail, deleteProperty: fail }) as Storage;
 }
+
+// Runs an api handler against a fake request and collects what it sent.
+export interface Out {
+  headers: Record<string, string>;
+  status: number;
+  body: string;
+}
+export const call = async (handler: Handler, req: unknown): Promise<Out> => {
+  const out: Out = { headers: {}, status: 0, body: '' };
+  const res = {
+    setHeader: (k: string, v: string) => { out.headers[k] = v; },
+    end: (b: string) => { out.body = b; },
+    set statusCode(v: number) { out.status = v; },
+  };
+  await handler(req as Req, res as unknown as ServerResponse);
+  return out;
+};
