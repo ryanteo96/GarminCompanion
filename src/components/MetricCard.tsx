@@ -16,7 +16,7 @@ interface MetricProps {
   progress?: number | null;
 }
 
-// One metric card in its signal's ink: label and verdict pill, the value, how it compares, and an optional 14-day line.
+// One metric card in its signal's ink: label and verdict pill, the value, how it compares, and an optional trend line.
 export function MetricCard({ ink, label, value, unit, subs = [], pill, glyph, series, progress }: MetricProps) {
   return (
     <div className="card metric" data-ink={ink}>
