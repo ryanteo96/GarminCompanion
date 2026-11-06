@@ -53,3 +53,16 @@ export async function expectDrawn(canvases: Locator): Promise<void> {
 
 export const cachedKeys =(page: Page): Promise<number> =>
   page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('gc:data:')).length);
+
+// Every screen worth a look: the three tabs plus the Running page, which no tab reaches directly.
+export const VIEWS = [...TAB_NAMES, 'Running'] as const;
+
+export async function showView(page: Page, view: (typeof VIEWS)[number]): Promise<void> {
+  if (view === 'Running') {
+    await page.goto('/#/activity/running');
+    await expect(page.getByRole('img', { name: /^Weekly distance/ })).toBeVisible();
+    return;
+  }
+  await page.getByRole('tab', { name: view }).click();
+  await expect(page.getByRole('tab', { name: view })).toHaveAttribute('aria-selected', 'true');
+}

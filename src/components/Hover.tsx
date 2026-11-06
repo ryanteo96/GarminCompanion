@@ -18,7 +18,7 @@ export function Hover({ tips, w, h }: { tips: Tip[]; w: number; h: number }) {
   };
   return (
     <>
-      <rect width={w} height={h} fill="transparent" style={{ touchAction: 'pan-y' }} onPointerDown={move} onPointerMove={move} onPointerLeave={() => setI(null)} />
+      <rect className="hover" width={w} height={h} fill="transparent" style={{ touchAction: 'pan-y' }} onPointerDown={move} onPointerMove={move} onPointerLeave={() => setI(null)} />
       {t && (
         <g pointerEvents="none">
           <line className="guide" x1={t.x} x2={t.x} y1={0} y2={h} />

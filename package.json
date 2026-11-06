@@ -13,7 +13,8 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "test:e2e": "playwright test",
     "preview": "node --env-file-if-exists=.env ./node_modules/vite/bin/vite.js preview",
-    "build": "vite build"
+    "build": "vite build",
+    "shots": "SHOTS=1 playwright test shots"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

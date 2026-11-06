@@ -19,3 +19,7 @@ Commits and PRs are authored with the local machine's configured git user and `g
 ## Ticket upkeep
 
 When you open a PR for a ticket, put `Closes #<n>` in the body and keep the issue's label current (`ready-for-agent` when specified, closed when shipped). `Closes` only fires for PRs into `main`, so a PR into another branch leaves the issue open: close it by hand once the work reaches `main`.
+
+## Seeing the UI
+
+`npm run shots` signs in and saves every view at phone and desktop width, light and dark, to `shots/`. Read those PNGs to check a UI change instead of writing a Playwright script.
