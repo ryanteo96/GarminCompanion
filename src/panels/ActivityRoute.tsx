@@ -1,8 +1,9 @@
-import { NavLink, useParams } from 'react-router';
+import { Navigate, NavLink, useParams } from 'react-router';
 import { isSport, SPORTS, sportOf, sportsWithSessions } from '../logic/sports.js';
 import { useStore } from '../store.js';
 import { FitnessCard } from '../components/FitnessCard.js';
 import { ActivityPanel } from './ActivityPanel.js';
+import { SessionPage } from './SessionPage.js';
 import { Sessions, TrainingPanel } from './TrainingPanel.js';
 
 // Chips for All and each Sport that has Sessions. replace, not push, like the tabs.
@@ -32,11 +33,14 @@ function SportStub({ slug }: { slug: string }) {
 }
 
 export function ActivityRoute() {
-  const { sport } = useParams();
+  const { sport, id } = useParams();
+  if (id && !isSport(sport)) return <Navigate to="/activity" replace />;
   return (
     <>
       <SportChips />
-      {isSport(sport) ? (
+      {isSport(sport) && id ? (
+        <SessionPage sport={sport} id={Number(id)} />
+      ) : isSport(sport) ? (
         <SportStub slug={sport} />
       ) : (
         // Training merges into Activity in its own ticket; until then All shows both.

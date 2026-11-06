@@ -8,3 +8,8 @@ export const clock12 = (hhmm: string): string => {
   const [h, m] = hhmm.split(':').map(Number);
   return new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 };
+export const pace = (mps: number | null | undefined): string => {
+  if (mps == null || mps < 1) return '—'; // shortcut: under 1 m/s is a stop or a walk, shown as a gap; add a walking mode if needed
+  const s = Math.round(1000 / mps);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};

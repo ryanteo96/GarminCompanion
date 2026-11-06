@@ -62,3 +62,37 @@ test('records Garmin sent without a date are reported, not hidden', async ({ pag
   await signIn(page);
   await expect(page.getByText('2 Garmin records had no date and were left out.')).toBeVisible();
 });
+
+test('a Session row opens its page, and Back returns to the list', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('tab', { name: 'Activity' }).click();
+  await page.locator('#load #sessions li a').first().click();
+  await expect(page).toHaveURL(/#\/activity\/(running|strength)\/\d+$/);
+  await expect(page.locator('#session-h')).toBeVisible();
+  await expect(page.getByText('Average heart rate')).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/activity$/);
+});
+
+test('a Session under the wrong Sport redirects to its own, and an unknown id to the Sport page', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('tab', { name: 'Activity' }).click();
+  await page.locator('#load #sessions li a').first().click();
+  const [, sport, id] = /#\/activity\/(\w+)\/(\d+)$/.exec(page.url())!;
+  const other = sport === 'running' ? 'strength' : 'running';
+  await page.goto(`/#/activity/${other}/${id}`);
+  await expect(page).toHaveURL(new RegExp(`#/activity/(${sport}/${id}|${other})$`));
+  await page.goto(`/#/activity/${sport}/999999999`);
+  await expect(page).toHaveURL(new RegExp(`#/activity/${sport}$`));
+});
+
+test('a running Session shows its pace and heart rate charts, laps and ratings', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/#/activity/running');
+  await page.locator('#sessions li a').first().click();
+  await expect(page.getByRole('img', { name: /^Pace over the run/ })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Heart rate over the run/ })).toBeVisible();
+  await expect(page.locator('table.laps tbody tr')).toHaveCount(5);
+  await expect(page.getByText('Decoupling', { exact: true })).toBeVisible();
+  await expect(page.getByText('RPE', { exact: true })).toBeVisible();
+});

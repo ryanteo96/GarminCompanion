@@ -9,7 +9,7 @@ import { useStore, type View } from './store.js';
 import { APP_TITLE, isTab, TAB_NAMES } from './tabs.js';
 
 export function App() {
-  const { tab, sport } = useParams();
+  const { tab, sport, id } = useParams();
   const view = useStore((s) => s.view);
   // New object on every finished load (success or stale fallback) and on every failure: the cue that a load settled.
   const fresh = useStore((s) => s.fresh);
@@ -34,6 +34,9 @@ export function App() {
   if (!isTab(tab)) return <Navigate to="/home" replace />;
   // Sport pages exist only under Activity; an unknown sport falls back to the All view.
   if (sport && !(tab === 'activity' && isSport(sport))) return <Navigate to={`/${tab}`} replace />;
+
+  // A Session needs a numeric id.
+  if (id && !/^\d+$/.test(id)) return <Navigate to={`/${tab}/${sport}`} replace />;
 
   return (
     <>

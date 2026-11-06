@@ -52,3 +52,17 @@ test('buildDetail turns decoded FIT messages into the stored shape', () => {
   assert.equal(d.metrics.z2Efficiency, (3 * 60) / 140);
   assert.equal(d.metrics.methodVersion, 1);
 });
+
+test('pace formats min/km and gaps below walking speed', async () => {
+  const { pace } = await import('../src/logic/format.js');
+  assert.equal(pace(4), '4:10');
+  assert.equal(pace(0.5), '—');
+  assert.equal(pace(null), '—');
+});
+
+test('pace formats min/km and gaps below walking speed', async () => {
+  const { pace } = await import('../src/logic/format.js');
+  assert.equal(pace(4), '4:10');
+  assert.equal(pace(0.5), '—');
+  assert.equal(pace(null), '—');
+});

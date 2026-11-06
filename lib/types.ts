@@ -42,6 +42,8 @@ export interface Activity {
   load: number | null;
   te: number | null;
   zones: number[];
+  feel: number | null; // 0 to 100 in steps of 25, runs only
+  rpe: number | null; // Borg CR10 x 10, runs only
 }
 
 // The Home card layout: shown card ids in order, and when it was last changed (ms since epoch). Shared by the UI and /api/layout.
@@ -109,6 +111,8 @@ export interface RawActivity {
   hrTimeInZone_3?: Metric;
   hrTimeInZone_4?: Metric;
   hrTimeInZone_5?: Metric;
+  directWorkoutFeel?: Metric;
+  directWorkoutRpe?: Metric;
 }
 export interface RawInput {
   daily: Raw<RawDaily>[];

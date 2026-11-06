@@ -18,7 +18,7 @@ const legacy = /^#(\w+)$/.exec(location.hash);
 if (legacy && (TABS.some((t) => t === legacy[1]) || legacy[1] === 'training')) history.replaceState(null, '', `#/${legacy[1]}`);
 
 const router = createHashRouter([
-  { path: '/:tab/:sport?', element: <App /> },
+  { path: '/:tab/:sport?/:id?', element: <App /> },
   { path: '*', element: <Navigate to="/home" replace /> },
 ]);
 

@@ -22,7 +22,7 @@ afterEach(() => {
   delete process.env.DATABASE_URL;
 });
 
-const act = (id: number, date: string, type = 'running'): Activity => ({ id, date, name: `a${id}`, type, minutes: 30, km: 5, avgHr: 140, load: 100, te: 3, zones: [0, 0, 0, 0, 0] });
+const act = (id: number, date: string, type = 'running'): Activity => ({ id, date, name: `a${id}`, type, minutes: 30, km: 5, avgHr: 140, load: 100, te: 3, zones: [0, 0, 0, 0, 0], feel: null, rpe: null });
 const detail = { metrics: { methodVersion: 1 } } as Detail;
 const TODAY = '2026-11-06';
 
@@ -70,6 +70,16 @@ test('sync stops starting new downloads after its deadline', async () => {
   const { syncActivities } = await import('../lib/activities.js');
   const done = await syncActivities([act(1, '2026-11-05'), act(2, '2026-11-04')], TODAY, () => Promise.resolve(detail), Date.now() - 1);
   assert.equal(done, 0);
+});
+
+test('storedDetail asks only for detail stored by the current parser', async () => {
+  const { storedDetail, PARSER_VERSION } = await import('../lib/activities.js');
+  fake.rows = [{ detail }];
+  assert.equal(await storedDetail(7), detail);
+  fake.rows = [];
+  assert.equal(await storedDetail(7), null);
+  const q = fake.calls.find((c) => c.text.includes('detail is not null and parser_version'));
+  assert.deepEqual(q?.values, [7, PARSER_VERSION]);
 });
 
 test('pendingCount is what the next sync will download, capped; 0 without a database', async () => {

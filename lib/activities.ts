@@ -43,6 +43,12 @@ export function pending(live: Activity[], rows: StoredRow[], today: string): Act
     .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 }
 
+// This Session's detail if stored by the current parser. Reads the table only; a FIT file is never downloaded here.
+export async function storedDetail(id: number): Promise<Detail | null> {
+  const rows = (await (await open())`select detail from activities where id = ${id} and detail is not null and parser_version = ${PARSER_VERSION}`) as { detail: Detail }[];
+  return rows[0]?.detail ?? null;
+}
+
 // How many Sessions the next sync will download, for the "syncing N" notice. 0 when storage is off or unreachable.
 export async function pendingCount(live: Activity[], today: string): Promise<number> {
   if (!process.env.DATABASE_URL) return 0;
