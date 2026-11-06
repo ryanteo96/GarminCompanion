@@ -329,15 +329,10 @@ table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 th, td { text-align: left; padding: var(--sp-2) var(--sp-2); border-bottom: 1px solid var(--rule); white-space: nowrap; }
 th { color: var(--mfg); font-weight: 600; } .num { text-align: right; }
 .heat { position: relative; max-width: 100%; }
-.heat-cell { transition: filter 0.25s ease; transform-box: fill-box; transform-origin: center; }
+/* GSAP drives --g (a neighbour's glow, 0 to 1) and --b (the lifted cell's glow), plus the transforms. */
+.heat-cell { --g: 0; filter: drop-shadow(0 0 calc(var(--g) * 6px) color-mix(in srgb, var(--ink-load) calc(var(--g) * 100%), transparent)); }
 .heat-cell.none { fill: var(--rule); }
-.heat-cell.glow { filter: drop-shadow(0 0 calc(var(--g) * 6px) color-mix(in srgb, var(--ink-load) calc(var(--g) * 100%), transparent)); }
-.heat-lift { animation: heat-lift 1.1s ease-in-out infinite alternate; }
-@keyframes heat-lift {
-  from { transform: translateY(-2px) scale(1.12); filter: drop-shadow(0 0 4px var(--ink-load)); }
-  to { transform: translateY(-5px) scale(1.24); filter: drop-shadow(0 0 12px var(--ink-load)); }
-}
-@media (prefers-reduced-motion: reduce) { .heat-lift { animation: none; transform: scale(1.15); filter: drop-shadow(0 0 8px var(--ink-load)); } }
+.heat-lift { --b: 0; filter: drop-shadow(0 0 calc(var(--b) * 14px) var(--ink-load)); }
 .heat-pop { position: absolute; z-index: 1; min-width: 160px; max-width: 240px; padding: var(--sp-2) var(--sp-3); background: var(--panel-2); border: 1px solid var(--rule); border-radius: 8px; font-size: 0.8125rem; pointer-events: none; }
 .month { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: flex-start; }
 .month-stats { flex: 1 1 14rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3) var(--sp-4); margin: 0; }
