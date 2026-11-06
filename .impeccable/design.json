@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-06T10:28:49+00:00",
+  "generatedAt": "2026-11-06T15:20:51+00:00",
   "title": "Design System: Garmin Companion",
   "extensions": {
     "colorMeta": {
@@ -653,7 +653,7 @@
       {
         "name": "state-transition",
         "value": "150ms (background, color, transform)",
-        "purpose": "Buttons, tabs, segments, switch track and thumb."
+        "purpose": "Buttons, tabs, segments, switch track and thumb; buttons and tabs also press to 0.97 on :active."
       },
       {
         "name": "chart-draw",
@@ -664,6 +664,16 @@
         "name": "skeleton-pulse",
         "value": "1.4s ease-in-out infinite, opacity to 0.55",
         "purpose": "Loading placeholders."
+      },
+      {
+        "name": "marker-glide",
+        "value": "0.9s cubic-bezier(0.16, 1, 0.3, 1), 0.15s delay",
+        "purpose": "The readiness and load marker slides from 0 to its place on the scale when it mounts; not replayed on data refresh; off under reduced motion."
+      },
+      {
+        "name": "sheet-enter",
+        "value": "0.4s cubic-bezier(0.16, 1, 0.3, 1); backdrop 0.3s fade",
+        "purpose": "Customize sheet slides up on a phone and in from the right from 820px; entrance only, closing is instant; off under reduced motion."
       },
       {
         "name": "heat-swell",
