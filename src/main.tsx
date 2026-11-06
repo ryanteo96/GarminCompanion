@@ -15,10 +15,10 @@ Chart.defaults.font.family = getComputedStyle(document.documentElement).getPrope
 
 // Old bookmarks use #recovery; the router wants #/recovery.
 const legacy = /^#(\w+)$/.exec(location.hash);
-if (legacy && TABS.some((t) => t === legacy[1])) history.replaceState(null, '', `#/${legacy[1]}`);
+if (legacy && (TABS.some((t) => t === legacy[1]) || legacy[1] === 'training')) history.replaceState(null, '', `#/${legacy[1]}`);
 
 const router = createHashRouter([
-  { path: '/:tab', element: <App /> },
+  { path: '/:tab/:sport?', element: <App /> },
   { path: '*', element: <Navigate to="/home" replace /> },
 ]);
 

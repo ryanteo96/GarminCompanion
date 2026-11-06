@@ -21,12 +21,11 @@ test('arrow keys, Home and End move the selection and the focus', async ({ page 
     await expect(tab(page, expected)).toBeFocused();
     await expect(tab(page, expected)).toHaveAttribute('aria-selected', 'true');
   };
-  await press('ArrowRight', 'Recovery');
-  await press('ArrowRight', 'Training');
-  await press('ArrowDown', 'Activity');
-  await press('End', 'Insights');
+  await press('ArrowRight', 'Activity');
+  await press('ArrowDown', 'Recovery');
+  await press('End', 'Recovery');
   await press('ArrowRight', 'Home');
-  await press('ArrowLeft', 'Insights');
+  await press('ArrowLeft', 'Recovery');
   await press('ArrowUp', 'Activity');
   await press('Home', 'Home');
 });
@@ -38,19 +37,30 @@ async function openFresh(page: Page, hash: string): Promise<Page> {
   return fresh;
 }
 
-test('a bookmark to #insights opens Insights', async ({ page }) => {
+test('a bookmark to #training lands on Activity', async ({ page }) => {
+  test.skip(LEGACY, 'the old app has a Training tab');
   await signIn(page);
-  const fresh = await openFresh(page, '#insights');
-  await expect(tab(fresh, 'Insights')).toHaveAttribute('aria-selected', 'true');
-  await expect(fresh).toHaveTitle('Insights · Garmin Companion');
+  const fresh = await openFresh(page, '#training');
+  await expect(tab(fresh, 'Activity')).toHaveAttribute('aria-selected', 'true');
+  await expect(fresh).toHaveURL(/#\/?activity$/);
 });
 
-test('a router-style link to #/insights opens Insights', async ({ page }) => {
-  test.skip(LEGACY, 'the old app only understands #insights');
+test('#/insights is gone and lands on Home', async ({ page }) => {
+  test.skip(LEGACY, 'the old app has an Insights tab');
   await signIn(page);
   const fresh = await openFresh(page, '#/insights');
-  await expect(tab(fresh, 'Insights')).toHaveAttribute('aria-selected', 'true');
-  await expect(fresh).toHaveTitle('Insights · Garmin Companion');
+  await expect(tab(fresh, 'Home')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a Sport chip opens its page, and an unknown sport falls back to All', async ({ page }) => {
+  test.skip(LEGACY, 'the old app has no Sport pages');
+  await signIn(page);
+  await tab(page, 'Activity').click();
+  await page.getByRole('navigation', { name: 'Sport' }).getByRole('link', { name: 'Running' }).click();
+  await expect(page).toHaveURL(/#\/activity\/running$/);
+  await expect(tab(page, 'Activity')).toHaveAttribute('aria-selected', 'true');
+  const fresh = await openFresh(page, '#/activity/swimming');
+  await expect(fresh).toHaveURL(/#\/?activity$/);
 });
 
 test('a legacy #recovery bookmark still opens Recovery', async ({ page }) => {

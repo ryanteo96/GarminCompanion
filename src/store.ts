@@ -42,6 +42,7 @@ export interface DashboardState extends Data {
   setRange: (days: number) => Promise<void>;
   login: (password: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteStored: () => Promise<void>;
   notify: (text: string | null, retry?: boolean) => void;
   clearRefocus: () => void;
 }
@@ -64,9 +65,11 @@ export const useStore = create<DashboardState>()((set, get) => {
       error: null,
       notice: stale
         ? { text: `Showing data saved ${fmtStamp(stale.savedAt)}. ${friendly(stale.err)[0]}.`, retry: true }
-        : skipped
-          ? { text: `${skipped} Garmin records had no date and were left out.`, retry: false }
-          : null,
+        : j.syncing
+          ? { text: `Syncing ${j.syncing} ${j.syncing === 1 ? 'activity' : 'activities'} in the background. Refresh in a minute to see them.`, retry: false }
+          : skipped
+            ? { text: `${skipped} Garmin records had no date and were left out.`, retry: false }
+            : null,
       fresh: { ...(stale ? { ts: stale.savedAt, label: 'Last synced' as const } : { ts: Date.parse(j.fetchedAt), label: 'Updated' as const }), through, behind: !through || through < localToday() },
     });
   }
@@ -160,6 +163,15 @@ export const useStore = create<DashboardState>()((set, get) => {
         fresh: null,
         loginError: ended ? null : "Signed out here, but couldn't reach the server to end the session. It will expire on its own.",
       });
+    },
+    async deleteStored() {
+      try {
+        const r = await fetch('/api/activities', { method: 'DELETE' });
+        if (r.status === 401) return await get().load();
+        set({ notice: { text: r.ok ? 'Stored activity data deleted. It is stored again from Garmin on the next load.' : "Couldn't delete the stored data. Try again.", retry: false } });
+      } catch {
+        set({ notice: { text: "Couldn't reach the server to delete the stored data.", retry: false } });
+      }
     },
     notify(text, retry = false) {
       set({ notice: text ? { text, retry } : null });

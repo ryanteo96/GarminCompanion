@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 export const PASSWORD = process.env.E2E_PASSWORD ?? 'e2e-password';
 export const LEGACY = !!process.env.E2E_LEGACY;
-export const TAB_NAMES = ['Home', 'Recovery', 'Training', 'Activity', 'Insights'] as const;
+export const TAB_NAMES = ['Home', 'Activity', 'Recovery'] as const;
 
 type DataJson = { days: Record<string, unknown>[]; skipped?: Record<string, number> };
 

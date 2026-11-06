@@ -5,6 +5,8 @@ type Metric = number | null | undefined;
 export interface Day {
   date: string;
   steps?: Metric;
+  stepGoal?: Metric;
+  distanceM?: Metric;
   calories?: Metric;
   restingHr?: Metric;
   intensityMin?: Metric;
@@ -61,13 +63,15 @@ export interface Payload {
   days: Day[];
   activities: Activity[];
   skipped?: Skipped;
+  /** Sessions being stored in the background after this response. */
+  syncing?: number;
 }
 
 // Garmin Connect Personal API records, only the fields normalize() reads.
 type Raw<T> = T | null;
 export interface RawDaily {
   calendarDate?: string | null;
-  movement?: { steps?: Metric };
+  movement?: { steps?: { value?: Metric; goal?: Metric; distanceInMeters?: Metric } | null };
   calories?: { burnedTotal?: Metric };
   heartRate?: { restingValue?: Metric };
   intensityMinutes?: { moderate?: Metric; vigorous?: Metric };

@@ -4,11 +4,12 @@ import { Boot } from './components/Boot.js';
 import { Dashboard } from './components/Dashboard.js';
 import { ErrorGate } from './components/ErrorGate.js';
 import { LoginGate } from './components/LoginGate.js';
+import { isSport } from './logic/sports.js';
 import { useStore, type View } from './store.js';
 import { APP_TITLE, isTab, TAB_NAMES } from './tabs.js';
 
 export function App() {
-  const { tab } = useParams();
+  const { tab, sport } = useParams();
   const view = useStore((s) => s.view);
   // New object on every finished load (success or stale fallback) and on every failure: the cue that a load settled.
   const fresh = useStore((s) => s.fresh);
@@ -29,7 +30,10 @@ export function App() {
     if (view !== 'boot') clearRefocus(); // the loading view comes first and must not use it up
   }, [view, tab, fresh, error]);
 
+  if (tab === 'training') return <Navigate to="/activity" replace />;
   if (!isTab(tab)) return <Navigate to="/home" replace />;
+  // Sport pages exist only under Activity; an unknown sport falls back to the All view.
+  if (sport && !(tab === 'activity' && isSport(sport))) return <Navigate to={`/${tab}`} replace />;
 
   return (
     <>
