@@ -59,13 +59,6 @@ test('a failed parse is recorded as an attempt and does not stop the rest', asyn
   assert.ok(writes[0].text.includes('attempts = activities.attempts + 1'), 'the failure bumps attempts');
 });
 
-test('sync does nothing without a database', async () => {
-  process.env.DATABASE_URL = '';
-  const { syncActivities } = await import('../lib/activities.js');
-  assert.equal(await syncActivities([act(1, '2026-11-05')], TODAY, () => Promise.resolve(detail)), 0);
-  assert.equal(fake.calls.length, 0);
-});
-
 test('sync stops starting new downloads after its deadline', async () => {
   const { syncActivities } = await import('../lib/activities.js');
   const done = await syncActivities([act(1, '2026-11-05'), act(2, '2026-11-04')], TODAY, () => Promise.resolve(detail), Date.now() - 1);
@@ -82,12 +75,17 @@ test('storedDetail asks only for detail stored by the current parser', async () 
   assert.deepEqual(q?.values, [7, PARSER_VERSION]);
 });
 
-test('pendingCount is what the next sync will download, capped; 0 without a database', async () => {
+test('pendingCount is what the next sync will download, capped', async () => {
   const { pendingCount } = await import('../lib/activities.js');
   const live = Array.from({ length: 12 }, (_, i) => act(i + 1, '2026-11-05'));
   assert.equal(await pendingCount(live, TODAY), 10);
-  process.env.DATABASE_URL = '';
-  assert.equal(await pendingCount(live, TODAY), 0);
+});
+
+test('storesDetail: a Sport Session within 90 days, the same rule the sync and the Session page use', async () => {
+  const { storesDetail } = await import('../src/logic/sports.js');
+  assert.equal(storesDetail(act(1, '2026-08-08'), TODAY), true, 'exactly 90 days back is stored');
+  assert.equal(storesDetail(act(1, '2026-08-07'), TODAY), false);
+  assert.equal(storesDetail(act(1, TODAY, 'yoga'), TODAY), false);
 });
 
 test('deleteStored wipes the table', async () => {

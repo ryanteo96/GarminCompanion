@@ -3,7 +3,7 @@ import type { ServerResponse } from 'node:http';
 import { afterEach, expect, test, vi } from 'vitest';
 
 const sync = vi.hoisted(() => vi.fn(() => Promise.resolve(0)));
-vi.mock('../lib/activities.js', () => ({ syncActivities: sync, pendingCount: () => Promise.resolve(2) }));
+vi.mock('../lib/sessions.js', () => ({ sessionStore: () => ({ sync, pendingCount: () => Promise.resolve(2) }) }));
 vi.mock('@vercel/functions', () => ({ waitUntil: () => undefined }));
 
 afterEach(() => {

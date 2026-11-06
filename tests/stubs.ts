@@ -35,6 +35,7 @@ export const call = async (handler: Handler, req: unknown): Promise<Out> => {
     setHeader: (k: string, v: string) => { out.headers[k] = v; },
     end: (b: string) => { out.body = b; },
     set statusCode(v: number) { out.status = v; },
+    once: () => undefined,
   };
   await handler(req as Req, res as unknown as ServerResponse);
   return out;
