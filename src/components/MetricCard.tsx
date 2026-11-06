@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Series14 } from '../logic/days.js';
 import { Spark } from './Spark.js';
+import { Num } from './Num.js';
 
 // One drawn icon per signal ink, 24-unit grid at a 2.25 stroke (shapes after Lucide, ISC).
 const ICONS: Record<string, ReactNode> = {
@@ -43,7 +44,7 @@ export function MetricCard({ ink, label, when, value, unit, subs = [], pill, gly
       </div>
       <div className="mval">
         {glyph}
-        <span>{value}</span>
+        <span><Num>{value}</Num></span>
         {unit && <span className="unit">{unit}</span>}
       </div>
       {(pill || first) && (

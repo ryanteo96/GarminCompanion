@@ -12,9 +12,10 @@ const STEP = 32; // cell plus gap
 const CELL = 28;
 const MAGNIFY = 0.3; // extra scale of the cell under the pointer
 const REACH = 1.1; // how far, in cells, the magnification spreads
+const LIFT = 3; // how far the swelled cells rise, in px
 const RING = CELL * (1 + MAGNIFY) + 4;
 
-type Quick = { s: ReturnType<typeof gsap.quickTo>; y: ReturnType<typeof gsap.quickTo> };
+type Quick = { sx: ReturnType<typeof gsap.quickTo>; sy: ReturnType<typeof gsap.quickTo>; y: ReturnType<typeof gsap.quickTo> };
 
 // Daily training load, one row per week (oldest first) and one column per weekday; brighter (darker in light mode) means more load, grey means none.
 // Under a pointer the grid swells like the Dock around it, a ring glides to the nearest day and a frosted card lists that day's activities.
@@ -51,7 +52,8 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
       if (!el) continue;
       gsap.set(el, { transformOrigin: '50% 50%' });
       const o = { duration: 0.5 * k, ease: 'power3.out' };
-      quick.current.set(c.date, { s: gsap.quickTo(el, 'scale', o), y: gsap.quickTo(el, 'y', o) });
+      // quickTo cannot drive the 'scale' shorthand, so each axis gets its own setter.
+      quick.current.set(c.date, { sx: gsap.quickTo(el, 'scaleX', o), sy: gsap.quickTo(el, 'scaleY', o), y: gsap.quickTo(el, 'y', o) });
     }
   }, [cells, k]);
 
@@ -61,8 +63,9 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
       if (!q) continue;
       const [cx, cy] = centre(c);
       const w = p && !calm ? Math.exp(-((p[0] - cx) ** 2 + (p[1] - cy) ** 2) / STEP ** 2 / (2 * REACH ** 2)) : 0;
-      void q.s(1 + MAGNIFY * w);
-      void q.y(-3 * w);
+      void q.sx(1 + MAGNIFY * w);
+      void q.sy(1 + MAGNIFY * w);
+      void q.y(-LIFT * w);
     }
   };
 
@@ -110,22 +113,25 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
       gsap.to(p, { opacity: 0, scale: 0.96, duration: 0.2 * k, ease: 'power2.in' });
       return;
     }
-    const first = !ringOn.current;
+    const resumed = !ringOn.current;
     ringOn.current = true;
+    // Coming back while the ring is still fading out glides from where it is instead of snapping to nothing first.
+    const first = resumed && Number(gsap.getProperty(r, 'opacity')) < 0.05;
     const [cx, cy] = centre(sel);
-    const to = { x: cx - RING / 2, y: cy - RING / 2 };
+    const to = { x: cx - RING / 2, y: cy - LIFT - RING / 2 };
+    if (resumed) gsap.killTweensOf(r);
     if (first) {
       gsap.set(r, { ...to, transformOrigin: '50% 50%', scale: 0.8, opacity: 0 });
       gsap.to(r, { opacity: 1, scale: 1, duration: 0.5 * k, ease: 'back.out(2.2)' });
-      if (!calm) gsap.to(r, { scale: 1.05, duration: 1.6, delay: 0.5, ease: 'sine.inOut', yoyo: true, repeat: -1 });
     } else {
-      gsap.to(r, { ...to, duration: 0.45 * k, ease: 'power3.out', overwrite: 'auto' });
+      gsap.to(r, { ...to, ...(resumed && { opacity: 1, scale: 1 }), duration: 0.45 * k, ease: 'power3.out', overwrite: 'auto' });
     }
+    if (resumed && !calm) gsap.to(r, { scale: 1.05, duration: 1.6, delay: 0.5, ease: 'sine.inOut', yoyo: true, repeat: -1 });
     const w = p.offsetWidth;
     const h = p.offsetHeight;
     const above = sel.col >= weeks - 2;
     const px = Math.max(0, cx - w / 2);
-    const py = above ? TOP + cy - CELL * 0.65 - h - 10 : TOP + cy + CELL * 0.65 + 10;
+    const py = above ? TOP + cy - LIFT - CELL * 0.65 - h - 10 : TOP + cy + CELL * 0.65 + 10;
     const origin = above ? '50% 100%' : '50% 0%';
     if (first) {
       gsap.set(p, { x: px, y: py + (above ? -8 : 8), scale: 0.94, opacity: 0, transformOrigin: origin });
@@ -134,6 +140,13 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
       gsap.to(p, { x: px, y: py, opacity: 1, scale: 1, transformOrigin: origin, duration: 0.45 * k, ease: 'power3.out', overwrite: 'auto' });
     }
   }, [sel]); // eslint-disable-line react-hooks/exhaustive-deps -- centre and weeks derive from cells, which only change with the data
+
+  // The breathing tween repeats forever, so it must not outlive the card (navigating away while a day is selected).
+  useEffect(() => {
+    const r = ring.current;
+    const p = pop.current;
+    return () => { gsap.killTweensOf([r, p]); };
+  }, []);
 
   if (!cells.length) return <p className="muted">No days to show yet.</p>;
 

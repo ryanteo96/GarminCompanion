@@ -8,6 +8,7 @@ import { heatmap, mean, readiness, type ReadinessKey } from '../logic/stats.js';
 import { num } from '../logic/format.js';
 import { useStore } from '../store.js';
 import type { CardId } from './layout.js';
+import { Num } from '../components/Num.js';
 
 export interface CardDef {
   title: string;
@@ -63,7 +64,7 @@ function MonthCard() {
         <MonthHeat cells={cells} activities={activities} />
         <dl className="month-stats">
           {stats.map(([k, v]) => (
-            <div key={k}><dt className="muted">{k}</dt><dd>{v}</dd></div>
+            <div key={k}><dt className="muted">{k}</dt><dd><Num>{String(v)}</Num></dd></div>
           ))}
         </dl>
       </div>

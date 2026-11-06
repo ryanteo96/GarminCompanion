@@ -4,3 +4,9 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+
+.claude/
+.impeccable/critique/
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/hook.cache.json

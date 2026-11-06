@@ -46,7 +46,7 @@ main:focus { outline: none; }
 
 /* ---- Controls: standard, 44px ---- */
 select, input[type="password"] { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r-ctl); min-height: 44px; padding: 0 var(--sp-3); caret-color: var(--primary); accent-color: var(--primary); }
-.btn { font: 600 1rem var(--sans); min-height: 44px; padding: 0 var(--sp-5); color: var(--text); background: var(--panel-2); border: 0; border-radius: 999px; cursor: pointer; transition: background 0.15s; }
+.btn { font: 600 1rem var(--sans); min-height: 44px; padding: 0 var(--sp-5); color: var(--text); background: var(--panel-2); border: 0; border-radius: 999px; cursor: pointer; transition: background 0.15s, transform 0.15s; }
 .btn:hover { background: color-mix(in srgb, var(--panel-2) 80%, var(--text)); }
 .btn.primary { color: var(--on-primary); background: var(--primary); }
 .btn.primary:hover { background: color-mix(in srgb, var(--primary) 82%, var(--bg)); }
@@ -113,7 +113,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .running .card > * + * { margin-top: var(--sp-5); }
 .fit-plot + .cap, .run > .cap { margin-top: var(--sp-3); }
 .bar.km { fill: var(--ink-fit); } .bar.load { fill: var(--ink-load); }
-.heat-cell { fill: var(--text); } .heat-dow { fill: var(--mfg); font: 0.75rem var(--sans); }
+.heat-cell { fill: var(--ink-load); } .heat-dow { fill: var(--mfg); font: 0.75rem var(--sans); }
 .bar.partial { fill-opacity: 0.45; }
 .laps { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .laps th, .laps td { text-align: left; padding: var(--sp-1) var(--sp-2); }
@@ -181,6 +181,8 @@ figcaption, .cap { margin: 0 0 var(--sp-3); font-size: 0.9375rem; font-weight: 6
 .zk-light { background: var(--st-typical); } .zk-sweet { background: var(--st-well); }
 .zk-ramp { background: var(--st-below); } .zk-spike { background: var(--st-strained); }
 .marker { position: absolute; top: -5px; width: 18px; height: 18px; border-radius: 50%; background: var(--text); border: 4px solid var(--panel); transform: translateX(-50%); }
+.marker { animation: glide 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s backwards; }
+@keyframes glide { from { left: 0; } }
 .tick { position: absolute; top: 16px; transform: translateX(-50%); font-size: 0.75rem; color: var(--mfg); }
 .zonelabels { display: flex; margin-top: calc(var(--sp-5) * -1); padding-top: var(--sp-5); font-size: 0.75rem; line-height: 1.3; color: var(--mfg); }
 .zonelabels span:nth-child(1) { width: 30%; } .zonelabels span:nth-child(2) { width: 20%; } .zonelabels span:nth-child(3) { width: 20%; } .zonelabels span:nth-child(4) { width: 30%; }
@@ -337,6 +339,13 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (max-width: 560px) { .mhead { font-size: 0.875rem; } .mhead .mico { width: 16px; height: 16px; } .when { flex-basis: 100%; margin-left: 0; font-size: 0.75rem; } #deltas th, #deltas td:first-child, #deltas td:last-child { white-space: normal; } #deltas th, #deltas td { padding-inline: var(--sp-1); } #deltas tr.quiet { display: none; }#acts-wrap { display: none; } .acts-list { display: block; } .cv { height: 210px; } }
 @media (max-width: 380px) { .metrics { gap: var(--sp-2); } .metric { padding: var(--sp-3); } .mval { font-size: 1.75rem; } }
 
+/* Sheet entrance: slides up on a phone, in from the right on a laptop; the backdrop fades. Entrance only, so closing stays instant. */
+.sheet[open] { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.sheet[open]::backdrop { transition: opacity 0.3s; }
+@starting-style { .sheet[open] { transform: translateY(100%); } .sheet[open]::backdrop { opacity: 0; } }
+@media (min-width: 820px) { @starting-style { .sheet[open] { transform: translateX(100%); } } }
+.btn:active, .tabs button:active { transform: scale(0.97); }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 .session-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: var(--sp-3); margin: var(--sp-3) 0; }
 .session-facts dd { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
@@ -345,7 +354,7 @@ tbody tr:last-child td { border-bottom: 0; }
 /* GSAP moves everything on the heatmap: the cells' swell, the ring and the card. */
 .heat-cell.none { fill: var(--panel-2); }
 .heat-legend { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-1); margin-top: var(--sp-2); color: var(--mfg); font-size: 0.75rem; }
-.heat-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--text); }
+.heat-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--ink-load); }
 .heat-legend i.none { background: var(--panel-2); }
 .heat-legend span:first-child { margin-right: var(--sp-1); } .heat-legend span:last-child { margin-left: var(--sp-1); }
 .heat-ring { fill: none; stroke: var(--text); stroke-width: 1.5; opacity: 0; }

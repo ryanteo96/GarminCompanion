@@ -8,6 +8,7 @@ import { fitnessSeries, type FitnessPoint } from '../logic/fitness.js';
 import { fmtDate, num } from '../logic/format.js';
 import { useStore } from '../store.js';
 import { Hover } from './Hover.js';
+import { Num } from './Num.js';
 
 const M = { top: 8, right: 12, bottom: 24, left: 36 };
 
@@ -45,9 +46,9 @@ export function FitnessCard() {
       <h2 className="cap">Fitness, Fatigue and Form</h2>
       <p className="sr-only">{summary}</p>
       <dl className="fit-now">
-        <div className="fitness"><dt>Fitness</dt><dd>{num(last.fitness)}</dd></div>
-        <div className="fatigue"><dt>Fatigue</dt><dd>{num(last.fatigue)}</dd></div>
-        <div className="form"><dt>Form</dt><dd>{last.form > 0 ? '+' : ''}{num(last.form)}</dd></div>
+        <div className="fitness"><dt>Fitness</dt><dd><Num>{num(last.fitness)}</Num></dd></div>
+        <div className="fatigue"><dt>Fatigue</dt><dd><Num>{num(last.fatigue)}</Num></dd></div>
+        <div className="form"><dt>Form</dt><dd><Num>{`${last.form > 0 ? '+' : ''}${num(last.form)}`}</Num></dd></div>
       </dl>
       <div role="img" aria-label={`Fitness and Fatigue over time. ${summary}`} className="fit-plot tall">
         <ParentSize debounceTime={50}>{({ width }) => width > 0 && <Plot width={width} height={220} points={points} keys={[{ k: 'fitness', cls: 'fitness' }, { k: 'fatigue', cls: 'fatigue' }]} />}</ParentSize>
