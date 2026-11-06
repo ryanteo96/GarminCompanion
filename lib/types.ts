@@ -5,6 +5,8 @@ type Metric = number | null | undefined;
 export interface Day {
   date: string;
   steps?: Metric;
+  stepGoal?: Metric;
+  distanceM?: Metric;
   calories?: Metric;
   restingHr?: Metric;
   intensityMin?: Metric;
@@ -67,7 +69,7 @@ export interface Payload {
 type Raw<T> = T | null;
 export interface RawDaily {
   calendarDate?: string | null;
-  movement?: { steps?: Metric };
+  movement?: { steps?: { value?: Metric; goal?: Metric; distanceInMeters?: Metric } | null };
   calories?: { burnedTotal?: Metric };
   heartRate?: { restingValue?: Metric };
   intensityMinutes?: { moderate?: Metric; vigorous?: Metric };

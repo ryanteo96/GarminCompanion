@@ -26,12 +26,12 @@ test('ranges split inclusive dates into windows', () => {
 
 test('normalize maps Garmin spec fields', () => {
   const out = normalize({
-    daily: [{ calendarDate: '2026-11-01', movement: { steps: 9000 }, calories: { burnedTotal: 2500 }, heartRate: { restingValue: 52 }, intensityMinutes: { moderate: 10, vigorous: 5 }, stress: { avgLevel: 30 }, bodyBattery: { maxValue: 90, minValue: 20 } }],
+    daily: [{ calendarDate: '2026-11-01', movement: { steps: { goal: 10000, value: 9000, distanceInMeters: 6800 } }, calories: { burnedTotal: 2500 }, heartRate: { restingValue: 52 }, intensityMinutes: { moderate: 10, vigorous: 5 }, stress: { avgLevel: 30 }, bodyBattery: { maxValue: 90, minValue: 20 } }],
     hrv: [{ calendarDate: '2026-11-01', lastNightAvg: 55, weeklyAvg: 53 }],
     sleep: [{ calendarDate: '2026-11-01', sleepTimeSeconds: 27000, deepSleepSeconds: 3600 }],
     acts: [{ activityId: 7, startTimeLocal: '2026-11-01 07:00:00', activityName: 'Run', activityType: { typeKey: 'running' }, duration: 1800, distance: 5000, activityTrainingLoad: 120, hrTimeInZone_2: 600 }],
   });
-  assert.deepEqual(out.days[0], { date: '2026-11-01', steps: 9000, calories: 2500, restingHr: 52, intensityMin: 20, stress: 30, bbHigh: 90, bbLow: 20, hrv: 55, hrvWeekly: 53, sleepH: 7.5, deepH: 1, remH: null, lightH: null, awakeH: null, sleepScore: null, bedtime: null, wake: null });
+  assert.deepEqual(out.days[0], { date: '2026-11-01', steps: 9000, stepGoal: 10000, distanceM: 6800, calories: 2500, restingHr: 52, intensityMin: 20, stress: 30, bbHigh: 90, bbLow: 20, hrv: 55, hrvWeekly: 53, sleepH: 7.5, deepH: 1, remH: null, lightH: null, awakeH: null, sleepScore: null, bedtime: null, wake: null });
   assert.equal(out.activities[0].date, '2026-11-01');
   assert.equal(out.activities[0].km, 5);
   assert.deepEqual(out.activities[0].zones, [0, 600, 0, 0, 0]);

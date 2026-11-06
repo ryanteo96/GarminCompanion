@@ -79,7 +79,9 @@ export function normalize({ daily = [], hrv = [], sleep = [], acts = [] }: Parti
   for (const d of dated<RawDaily>(daily, 'daily')) {
     const im = d.intensityMinutes;
     Object.assign(row(d.calendarDate), {
-      steps: d.movement?.steps ?? null,
+      steps: d.movement?.steps?.value ?? null,
+      stepGoal: d.movement?.steps?.goal ?? null,
+      distanceM: d.movement?.steps?.distanceInMeters ?? null,
       calories: d.calories?.burnedTotal ?? null,
       restingHr: d.heartRate?.restingValue ?? null,
       // Vigorous minutes count double toward Garmin's weekly goal.
