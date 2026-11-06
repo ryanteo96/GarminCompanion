@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
-import { buildDetail, decoupling, downsample, z2Efficiency, type Rec } from '../lib/fit.js';
+import { buildDetail, decoupling, downsample, z2Efficiency, z2Mean, type Rec } from '../lib/fit.js';
 
 // speed m/s and heart rate per second
 const steady = (n: number, speed: number, hr: number): Rec[] => Array.from({ length: n }, (_, t) => ({ t, speed, hr }));
@@ -33,6 +33,13 @@ test('z2Efficiency is speed per heart-rate beat inside the zone, in metres per m
   assert.equal(z2Efficiency(steady(100, 3, 130), [120, 140]), null, 'too little time in zone');
 });
 
+test('z2Mean is the mean speed and heart rate inside the zone', () => {
+  const recs = [...steady(400, 3, 130), ...steady(400, 4, 170)];
+  assert.deepEqual(z2Mean(recs, [120, 140]), { speed: 3, hr: 130 });
+  assert.equal(z2Mean(recs, null), null);
+  assert.equal(z2Mean(steady(100, 3, 130), [120, 140]), null);
+});
+
 test('buildDetail turns decoded FIT messages into the stored shape', () => {
   const t0 = new Date('2026-11-01T07:00:00Z').getTime();
   const rec = (s: number) => ({ timestamp: new Date(t0 + s * 1000), heartRate: 140, enhancedSpeed: 3, cadence: 80, enhancedAltitude: 10, positionLat: 2 ** 30, positionLong: 0 });
@@ -50,6 +57,7 @@ test('buildDetail turns decoded FIT messages into the stored shape', () => {
   assert.equal(d.sets[0].category, 'benchPress');
   assert.equal(d.metrics.decoupling, 0);
   assert.equal(d.metrics.z2Efficiency, (3 * 60) / 140);
+  assert.deepEqual([d.metrics.z2Speed, d.metrics.z2Hr], [3, 140]);
   assert.equal(d.metrics.methodVersion, 1);
 });
 

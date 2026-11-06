@@ -2,7 +2,7 @@ import { Decoder, Stream } from '@garmin/fitsdk';
 import { unzipSync } from 'fflate';
 
 // Bump PARSER_VERSION when the stored shape changes (Sessions are re-parsed); METHOD_VERSION when decoupling or Z2 efficiency are computed differently.
-export const PARSER_VERSION = 1;
+export const PARSER_VERSION = 2;
 export const METHOD_VERSION = 1;
 const POINTS = 500;
 
@@ -22,7 +22,7 @@ export interface Detail {
   route: [number, number][];
   laps: Lap[];
   sets: SetRow[];
-  metrics: { decoupling: number | null; z2Efficiency: number | null; methodVersion: number };
+  metrics: { decoupling: number | null; z2Efficiency: number | null; z2Speed: number | null; z2Hr: number | null; methodVersion: number };
 }
 
 // Evenly spaced picks that always keep the first and last point.
@@ -45,11 +45,23 @@ export function decoupling(recs: Rec[]): number | null {
   return ((a - b) / a) * 100;
 }
 
-// Z2 efficiency: metres per minute per beat while heart rate sits inside zone 2. Null without zone bounds or with under 5 minutes in the zone.
-export function z2Efficiency(recs: Rec[], z2: [number, number] | null): number | null {
+// Records at a moving heart rate inside zone 2. Null without zone bounds or with under 5 minutes in the zone.
+const inZ2 = (recs: Rec[], z2: [number, number] | null): (Rec & { hr: number; speed: number })[] | null => {
   if (!z2) return null;
   const m = recs.filter(moving).filter((r) => r.hr >= z2[0] && r.hr <= z2[1]);
-  return m.length < 300 ? null : (mean(m.map((r) => r.speed)) * 60) / mean(m.map((r) => r.hr));
+  return m.length < 300 ? null : m;
+};
+
+// Z2 efficiency: metres per minute per beat while heart rate sits inside zone 2.
+export function z2Efficiency(recs: Rec[], z2: [number, number] | null): number | null {
+  const m = inZ2(recs, z2);
+  return m && (mean(m.map((r) => r.speed)) * 60) / mean(m.map((r) => r.hr));
+}
+
+// Mean speed (m/s) and heart rate (bpm) while in zone 2: the pace you ran at an easy heart rate.
+export function z2Mean(recs: Rec[], z2: [number, number] | null): { speed: number; hr: number } | null {
+  const m = inZ2(recs, z2);
+  return m && { speed: mean(m.map((r) => r.speed)), hr: mean(m.map((r) => r.hr)) };
 }
 
 type Mesg = Record<string, unknown>;
@@ -73,6 +85,7 @@ export function buildDetail(m: Messages): Detail {
   // Metrics use every record; only what is stored is thinned.
   const z = (m.hrZoneMesgs ?? []).map((x) => n(x.highBpm));
   const z2: [number, number] | null = z[0] != null && z[1] != null ? [z[0], z[1]] : null;
+  const z2m = z2Mean(all, z2);
   const pts = downsample(all);
   const col = (k: 'hr' | 'speed' | 'cadence' | 'alt'): (number | null)[] => pts.map((r) => r[k] ?? null);
   return {
@@ -87,7 +100,7 @@ export function buildDetail(m: Messages): Detail {
       weightKg: n(s.weight),
       durationS: n(s.duration),
     })),
-    metrics: { decoupling: decoupling(all), z2Efficiency: z2Efficiency(all, z2), methodVersion: METHOD_VERSION },
+    metrics: { decoupling: decoupling(all), z2Efficiency: z2Efficiency(all, z2), z2Speed: z2m?.speed ?? null, z2Hr: z2m?.hr ?? null, methodVersion: METHOD_VERSION },
   };
 }
 

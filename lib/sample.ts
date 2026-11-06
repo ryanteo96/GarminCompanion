@@ -62,5 +62,5 @@ export function sampleDetail(id: number): Detail {
   const wobble = (s: number): number => Math.sin(s / 90 + id);
   const recordMesgs = Array.from({ length: 1800 }, (_, s) => ({ timestamp: date(s), heartRate: Math.round(145 + s / 150 + 3 * wobble(s)), speed: 3 + 0.25 * wobble(s / 2) }));
   const lapMesgs = Array.from({ length: 5 }, (_, i) => ({ startTime: date(i * 360), totalElapsedTime: 360, totalDistance: 1090, avgHeartRate: 147 + 2 * i, avgSpeed: 3.03 }));
-  return buildDetail({ recordMesgs, lapMesgs, hrZoneMesgs: [100, 120, 140, 155, 170, 190].map((highBpm) => ({ highBpm })) });
+  return buildDetail({ recordMesgs, lapMesgs, hrZoneMesgs: [140, 155, 165, 175, 185, 195].map((highBpm) => ({ highBpm })) });
 }

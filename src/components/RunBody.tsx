@@ -1,40 +1,12 @@
-import { AxisBottom, AxisLeft } from '@visx/axis';
-import { Group } from '@visx/group';
-import { ParentSize } from '@visx/responsive';
-import { scaleLinear } from '@visx/scale';
-import { LinePath } from '@visx/shape';
 import type { Detail } from '../../lib/fit.js';
 import { num, pace } from '../logic/format.js';
+import { Plot } from './Plot.js';
 
-const M = { top: 8, right: 12, bottom: 24, left: 40 };
-const FEEL = ['Very weak', 'Weak', 'Normal', 'Strong', 'Very strong']; // Garmin stores 0, 25, 50, 75, 100
+export const FEEL = ['Very weak', 'Weak', 'Normal', 'Strong', 'Very strong']; // Garmin stores 0, 25, 50, 75, 100
 const mmss = (s: number | null): string => (s == null ? '—' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`);
 
-function Plot({ width, t, y: ys, cls, flip, fmt }: { width: number; t: number[]; y: (number | null)[]; cls: string; flip?: boolean; fmt: (v: number) => string }) {
-  const height = 140;
-  const w = Math.max(width - M.left - M.right, 0);
-  const h = height - M.top - M.bottom;
-  const pts = t.map((x, i) => ({ x, v: ys[i] })).filter((p): p is { x: number; v: number } => p.v != null);
-  const vs = pts.map((p) => p.v);
-  const x = scaleLinear<number>({ domain: [0, Math.max(1, ...t)], range: [0, w] });
-  const y = scaleLinear<number>({ domain: [Math.min(...vs), Math.max(...vs)], range: flip ? [0, h] : [h, 0], nice: true });
-  return (
-    <svg width={width} height={height} aria-hidden="true">
-      <Group left={M.left} top={M.top}>
-        <AxisLeft scale={y} numTicks={4} tickFormat={(v) => fmt(Number(v))} axisClassName="ax" tickClassName="ax" hideAxisLine />
-        <AxisBottom scale={x} top={h} numTicks={5} tickFormat={(v) => `${Math.round(Number(v) / 60)} min`} axisClassName="ax" tickClassName="ax" />
-        <LinePath className={`ln ${cls}`} data={pts} x={(p) => x(p.x)} y={(p) => y(p.v)} />
-      </Group>
-    </svg>
-  );
-}
-
-function Chart({ title, summary, ...p }: { title: string; summary: string; t: number[]; y: (number | null)[]; cls: string; flip?: boolean; fmt: (v: number) => string }) {
-  return (
-    <div role="img" aria-label={`${title} over the run. ${summary}`} className="fit-plot short">
-      <ParentSize debounceTime={50}>{({ width }) => width > 0 && <Plot width={width} {...p} />}</ParentSize>
-    </div>
-  );
+function Chart({ title, summary, ...p }: { title: string; summary: string; x: number[]; y: (number | null)[]; cls: string; flip?: boolean; fmt: (v: number) => string }) {
+  return <Plot label={`${title} over the run. ${summary}`} xFmt={(v) => `${Math.round(v / 60)} min`} {...p} />;
 }
 
 export function RunBody({ detail: d, feel, rpe }: { detail: Detail; feel: number | null; rpe: number | null }) {
@@ -60,9 +32,9 @@ export function RunBody({ detail: d, feel, rpe }: { detail: Detail; feel: number
         ))}
       </dl>
       <h3 className="cap">Pace</h3>
-      <Chart title="Pace" summary={`Average ${pace(mean(mps))} per km.`} t={s.t} y={speeds.map((v) => (v == null ? null : 1000 / 60 / v))} cls="pace" flip fmt={(v) => pace(1000 / 60 / v)} />
+      <Chart title="Pace" summary={`Average ${pace(mean(mps))} per km.`} x={s.t} y={speeds.map((v) => (v == null ? null : 1000 / 60 / v))} cls="pace" flip fmt={(v) => pace(1000 / 60 / v)} />
       <h3 className="cap">Heart rate</h3>
-      <Chart title="Heart rate" summary={`Average ${num(mean(hrs))} bpm.`} t={s.t} y={s.hr} cls="hr" fmt={(v) => String(Math.round(v))} />
+      <Chart title="Heart rate" summary={`Average ${num(mean(hrs))} bpm.`} x={s.t} y={s.hr} cls="hr" fmt={(v) => String(Math.round(v))} />
       {laps.length > 0 && (
         <table className="laps">
           <caption className="cap">Laps</caption>
