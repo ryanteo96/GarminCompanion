@@ -1,6 +1,7 @@
 {
   "buildCommand": "vite build",
   "outputDirectory": "dist",
+  "functions": { "api/data.ts": { "maxDuration": 60 } },
   "headers": [
     {
       "source": "/(.*)",

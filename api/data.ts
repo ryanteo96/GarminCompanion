@@ -1,4 +1,6 @@
 import type { ServerResponse } from 'node:http';
+import { waitUntil } from '@vercel/functions';
+import { syncActivities } from '../lib/activities.js';
 import { authed } from '../lib/auth.js';
 import { fetchAll, fetchRaw, pickToday, shape } from '../lib/garmin.js';
 import { send, type Req } from '../lib/http.js';
@@ -14,6 +16,8 @@ export default async function handler(req: Req, res: ServerResponse): Promise<vo
     const demo = !process.env.GARMIN_API_KEY;
     if (!demo && q.has('debug')) return send(res, 200, shape(await fetchRaw(days, today)));
     const data = demo ? sample(days, today) : await fetchAll(days, today);
+    // ADR 0005: store parsed activity detail after the response, so the page never waits on FIT downloads. waitUntil keeps the function alive for it on Vercel and is a no-op elsewhere.
+    if (!demo) waitUntil(new Promise((done) => res.once('close', done)).then(() => syncActivities(data.activities, today)));
     send(res, 200, { demo, fetchedAt: new Date().toISOString(), ...data }, { 'Cache-Control': 'private, no-store' });
   } catch (e) {
     send(res, 502, { error: e instanceof Error ? e.message : String(e) });

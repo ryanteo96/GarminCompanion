@@ -26,17 +26,26 @@ export async function token(): Promise<string> {
   return value;
 }
 
-async function get<T>(path: string, params: Record<string, string | number> = {}, retry = true): Promise<T | null> {
+async function request(path: string, params: Record<string, string | number> = {}, retry = true): Promise<Response> {
   const url = new URL(BASE + path);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
   const r = await fetch(url, { headers: { Authorization: `Bearer ${await token()}` } });
   if (r.status === 401 && retry) {
     tok = { value: null, at: 0 };
-    return get<T>(path, params, false);
+    return request(path, params, false);
   }
   if (!r.ok) throw new Error(`Garmin ${path} returned ${r.status}`);
-  const text = await r.text();
+  return r;
+}
+
+async function get<T>(path: string, params: Record<string, string | number> = {}): Promise<T | null> {
+  const text = await (await request(path, params)).text();
   return text ? (JSON.parse(text) as T) : null;
+}
+
+// The activity's FIT file, as Garmin sends it (a ZIP).
+export async function downloadActivity(id: number): Promise<Uint8Array> {
+  return new Uint8Array(await (await request(`/download-service/files/activity/${id}`)).arrayBuffer());
 }
 
 export const addDays = (d: string, n: number): string => {
