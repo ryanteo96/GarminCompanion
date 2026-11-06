@@ -85,6 +85,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .fit-plot { width: 100%; }
 .fit-plot.tall { height: 220px; }
 .fit-plot.short { height: 110px; }
+.fit-plot.chart { height: 140px; } /* matches the svg height in Plot and WeekBars */
 .fit .ln, .run .ln { fill: none; stroke-width: 2; stroke-linejoin: round; }
 .fit .ln.fitness { stroke: var(--primary); }
 .fit .ln.fatigue { stroke: var(--ink-load); }
@@ -98,6 +99,9 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .running .dot { stroke: none; }
 .running .dot.pace { fill: var(--primary); } .running .dot.hr { fill: var(--ink-hrv); } .running .dot.rpe { fill: var(--ink-load); } .running .dot.feel { fill: var(--ink-steps); }
 .running .ln { fill: none; stroke-width: 1.5; stroke-opacity: 0.5; }
+.fit.card { margin-bottom: var(--sp-3); }
+.fit-plot + .fit-plot, .fit-plot + p { margin-top: var(--sp-3); }
+.grid + .metrics { margin-top: var(--sp-5); }
 .bar.km { fill: var(--primary); } .bar.load { fill: var(--ink-load); }
 .bar.partial { fill-opacity: 0.45; }
 .laps { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
