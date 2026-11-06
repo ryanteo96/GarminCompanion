@@ -27,7 +27,7 @@ function SportStub({ slug }: { slug: string }) {
   const since = (n: number): string => days.at(-n)?.date ?? '0000';
   return (
     <>
-      <h2 className="cap">{SPORTS.find((s) => s.slug === slug)?.name}</h2>
+      <h2 className="sr-only">{SPORTS.find((s) => s.slug === slug)?.name}</h2>
       <Sessions activities={mine} since={since} />
     </>
   );

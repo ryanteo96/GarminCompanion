@@ -125,7 +125,6 @@ export function TrainingPanel() {
       <LoadHero last={last}>
         <Sessions activities={activities} since={since} />
       </LoadHero>
-      <p className="scope">Charts follow the chart range. The load summary above uses the last 7 and 28 days.</p>
       <div className="grid">
         <ChartCard caption={spec.wloadCaption} captionId="cap-wload" canvasId="c-wload" type="bar" {...spec.wload} />
         <ChartCard caption="Acute (7-day) vs chronic (28-day weekly average) load" canvasId="c-ac" type="line" {...spec.ac} />
@@ -143,7 +142,7 @@ export function TrainingPanel() {
                 {recent.map((a) => (
                   <tr key={a.id}>
                     {[fmtDate(a.date), a.name, a.type.replaceAll('_', ' '), num(a.minutes), num(a.km, 1), num(a.avgHr), num(a.load)].map((v, i) => (
-                      <td key={i} className={i > 2 ? 'num' : undefined}>{v}</td>
+                      <td key={i} className={i > 2 ? 'num' : i === 2 ? 'a-type' : undefined}>{v}</td>
                     ))}
                   </tr>
                 ))}

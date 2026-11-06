@@ -7,7 +7,7 @@ import { TAB_NAMES, type Tab } from '../tabs.js';
 const RANGES: [number, string][] = [[30, '30 days'], [90, '90 days'], [180, '180 days'], [365, '1 year']];
 
 export function Header({ tab }: { tab: Tab }) {
-  const { demo, fresh, loading, range, srStatus, load, logout, deleteStored, setRange } = useStore();
+  const { demo, fresh, loading, range, srStatus, load, setRange } = useStore();
   const [, tick] = useState(0);
 
   // "12 min ago" goes stale on its own, so re-render once a minute.
@@ -31,8 +31,6 @@ export function Header({ tab }: { tab: Tab }) {
         <span id="demo" className="badge" hidden={!demo}>Demo data</span>
         <span id="updated" className="muted small" title={tooltip}>{updated}</span>
         <button id="refresh" className="link" type="button" disabled={loading} onClick={() => void load()}>Refresh</button>
-        <button id="delete-stored" className="link" type="button" hidden={demo} onClick={() => window.confirm('Delete all stored activity data? Daily data is not affected, and the last 90 days are stored again on the next load.') && void deleteStored()}>Delete stored data</button>
-        <button id="logout" className="link" type="button" onClick={() => void logout()}>Sign out</button>
         <span id="sr-status" className="sr-only" role="status">{srStatus}</span>
       </div>
       {/* Nothing on Home follows the chart range, so neither the control nor its note is there. */}

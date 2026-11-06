@@ -7,7 +7,7 @@ export const mean = (a: Num[]): number | null => {
   const v = a.filter((x) => x != null);
   return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
 };
-const sd = (a: Num[]): number | null => {
+export const sd = (a: Num[]): number | null => {
   const m = mean(a);
   const v = a.filter((x) => x != null);
   return v.length > 1 && m != null ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / (v.length - 1)) : null;

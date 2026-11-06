@@ -12,7 +12,7 @@ const withinList: Modifier = ({ transform, draggingNodeRect, containerNodeRect }
   return { ...transform, x: 0, y };
 };
 
-const GROUP = { health: 'Health', training: 'Training' };
+export const GROUP = { recovery: 'Recovery', training: 'Training', today: 'Today' };
 
 // A card's switch: on while it is shown. The row it sits in changes when it flips, so focus is put back on the switch afterwards.
 function Switch({ id, on, toggle }: { id: CardId; on: boolean; toggle: (id: CardId) => void }) {

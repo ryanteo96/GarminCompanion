@@ -1,5 +1,6 @@
 import { PANELS } from '../panels/index.js';
 import { TABS, type Tab } from '../tabs.js';
+import { Account } from './Account.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { Header } from './Header.js';
 import { Notice } from './Notice.js';
@@ -24,6 +25,7 @@ export function Dashboard({ tab }: { tab: Tab }) {
               )}
             </section>
           ))}
+          <Account where="foot" />
         </main>
       </div>
     </div>

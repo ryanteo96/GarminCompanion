@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { ScrollRegion } from '../components/ScrollRegion.js';
 import { newest } from '../logic/days.js';
-import { fmtDate, num } from '../logic/format.js';
+import { fmtDate, hm, num } from '../logic/format.js';
 import { weekDeltas, type WeekDelta } from '../logic/stats.js';
 import { useStore } from '../store.js';
 
@@ -41,9 +41,9 @@ export function WeekCard() {
             )}
             {deltas.map((x) => (
               <tr key={x.k}>
-                <td>{`${x.label}${x.unit ? ` (${x.unit})` : ''}`}</td>
-                <td className="num">{num(x.now, x.now < 100 ? 1 : 0)}</td>
-                <td className="num">{num(x.prev, x.prev < 100 ? 1 : 0)}</td>
+                <td>{`${x.label}${x.unit && x.k !== 'sleepH' ? ` (${x.unit})` : ''}`}</td>
+                <td className="num">{x.k === 'sleepH' ? hm(x.now) : num(x.now, x.now < 100 ? 1 : 0)}</td>
+                <td className="num">{x.k === 'sleepH' ? hm(x.prev) : num(x.prev, x.prev < 100 ? 1 : 0)}</td>
                 <ChangeCell x={x} />
               </tr>
             ))}

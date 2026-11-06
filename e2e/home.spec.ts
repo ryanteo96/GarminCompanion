@@ -31,12 +31,12 @@ test('Home fits a phone and widens to four columns', async ({ page }) => {
   await signIn(page);
   await expect(page.locator('#today-h')).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
-  const tracks = () => page.locator('.home-grid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+  const tracks = () => page.locator('.home-grid').first().evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
   expect(await tracks()).toBe(2);
   await page.setViewportSize({ width: 1280, height: 800 });
   await expect(page.locator('.side')).toBeVisible();
   expect(await tracks()).toBe(4);
-  const grid = (await page.locator('.home-grid').boundingBox())!.width;
+  const grid = (await page.locator('.home-grid').first().boundingBox())!.width;
   const load = (await page.locator('[data-card="load"]').boundingBox())!.width;
   expect(Math.abs(load - grid / 2)).toBeLessThanOrEqual(grid * 0.02);
 });
@@ -132,7 +132,7 @@ test('a saved layout is there on first paint and unknown ids are ignored', async
 });
 
 const order = (page: Page) => page.locator('.home-grid [data-card]').evaluateAll((els) => els.map((el) => el.getAttribute('data-card')));
-const DEFAULT = ['readiness', 'hrv', 'resting-hr', 'sleep', 'body-battery', 'load', 'week', 'month', 'sessions', 'steps', 'intensity', 'stress'];
+const DEFAULT = ['readiness', 'hrv', 'resting-hr', 'sleep', 'body-battery', 'load', 'month', 'week', 'sessions', 'steps', 'intensity', 'stress'];
 
 test('hide, show and reset from the sheet survive a reload', async ({ page }) => {
   await signIn(page);

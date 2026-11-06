@@ -1,3 +1,4 @@
+import { Account } from './Account.js';
 import { Fragment, type KeyboardEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { sportsWithSessions } from '../logic/sports.js';
@@ -61,7 +62,7 @@ export function Sidebar({ tab }: { tab: Tab }) {
           </Fragment>
         ))}
       </div>
-      <p className="side-note small muted">Signing out also clears the copy of your data cached in this browser.</p>
+      <Account where="side" />
     </aside>
   );
 }

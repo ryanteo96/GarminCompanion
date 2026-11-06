@@ -11,7 +11,7 @@ import type { CardId } from './layout.js';
 
 export interface CardDef {
   title: string;
-  group: 'health' | 'training';
+  group: 'recovery' | 'training' | 'today';
   span: 1 | 2 | 'full';
   Component: ComponentType;
 }
@@ -63,7 +63,7 @@ function MonthCard() {
     ['Hours', num(week.reduce((t, a) => t + (a.minutes ?? 0), 0) / 60, 1)],
   ];
   return (
-    <section className="card" aria-labelledby="month-h">
+    <section className="card month-card" aria-labelledby="month-h">
       <h3 id="month-h" className="cap">Training load, last 5 weeks</h3>
       <div className="month">
         <MonthHeat cells={cells} activities={activities} />
@@ -89,16 +89,16 @@ function Stress() {
 
 // The record key is the card's id, so typecheck fails if a card in CARD_IDS has no entry.
 export const CARDS: Record<CardId, CardDef> = {
-  readiness: { title: 'Readiness', group: 'health', span: 'full', Component: ReadinessCard },
-  hrv: { title: 'HRV', group: 'health', span: 1, Component: signal('hrv') },
-  'resting-hr': { title: 'Resting HR', group: 'health', span: 1, Component: signal('restingHr') },
-  sleep: { title: 'Sleep', group: 'health', span: 1, Component: signal('sleepH') },
-  'body-battery': { title: 'Body Battery', group: 'health', span: 1, Component: signal('bbHigh') },
+  readiness: { title: 'Readiness', group: 'recovery', span: 'full', Component: ReadinessCard },
+  hrv: { title: 'HRV', group: 'recovery', span: 1, Component: signal('hrv') },
+  'resting-hr': { title: 'Resting HR', group: 'recovery', span: 1, Component: signal('restingHr') },
+  sleep: { title: 'Sleep', group: 'recovery', span: 1, Component: signal('sleepH') },
+  'body-battery': { title: 'Body Battery', group: 'recovery', span: 1, Component: signal('bbHigh') },
   load: { title: 'Training load', group: 'training', span: 2, Component: LoadCard },
   sessions: { title: 'Recent sessions', group: 'training', span: 2, Component: SessionsCard },
-  week: { title: 'This week', group: 'training', span: 'full', Component: WeekCard },
+  week: { title: 'This week', group: 'training', span: 2, Component: WeekCard },
   month: { title: 'Month heatmap', group: 'training', span: 2, Component: MonthCard },
-  steps: { title: 'Steps', group: 'training', span: 1, Component: Steps },
-  intensity: { title: 'Intensity minutes', group: 'training', span: 1, Component: Intensity },
-  stress: { title: 'Stress', group: 'health', span: 1, Component: Stress },
+  steps: { title: 'Steps', group: 'today', span: 1, Component: Steps },
+  intensity: { title: 'Intensity minutes', group: 'today', span: 1, Component: Intensity },
+  stress: { title: 'Stress', group: 'today', span: 1, Component: Stress },
 };
