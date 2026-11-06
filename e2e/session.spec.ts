@@ -85,3 +85,14 @@ test('a Session under the wrong Sport redirects to its own, and an unknown id to
   await page.goto(`/#/activity/${sport}/999999999`);
   await expect(page).toHaveURL(new RegExp(`#/activity/${sport}$`));
 });
+
+test('a running Session shows its pace and heart rate charts, laps and ratings', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/#/activity/running');
+  await page.locator('#sessions li a').first().click();
+  await expect(page.getByRole('img', { name: /^Pace over the run/ })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Heart rate over the run/ })).toBeVisible();
+  await expect(page.locator('table.laps tbody tr')).toHaveCount(5);
+  await expect(page.getByText('Decoupling', { exact: true })).toBeVisible();
+  await expect(page.getByText('RPE', { exact: true })).toBeVisible();
+});

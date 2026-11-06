@@ -126,6 +126,8 @@ export function normalize({ daily = [], hrv = [], sleep = [], acts = [] }: Parti
       avgHr: a.averageHR ?? null,
       load: a.activityTrainingLoad ?? null,
       te: a.aerobicTrainingEffect ?? null,
+      feel: a.directWorkoutFeel ?? null,
+      rpe: a.directWorkoutRpe ?? null,
       zones: [a.hrTimeInZone_1, a.hrTimeInZone_2, a.hrTimeInZone_3, a.hrTimeInZone_4, a.hrTimeInZone_5].map((s) => s ?? 0), // seconds
     }));
 

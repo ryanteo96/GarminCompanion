@@ -1,3 +1,4 @@
+import { buildDetail, type Detail } from './fit.js';
 import { addDays } from './garmin.js';
 import type { Activity, Day } from './types.js';
 
@@ -35,6 +36,7 @@ export function sample(n: number, today = new Date().toISOString().slice(0, 10))
         id: id++, date, name: dow === 6 ? 'Long run' : 'Training session', type: dow === 4 ? 'strength_training' : 'running',
         minutes: mins, km: dow === 4 ? null : Math.round(mins * 0.17 * 100) / 100, avgHr: Math.round(135 + load / 8),
         load, te: Math.round((2 + load / 70) * 10) / 10, zones: z,
+        feel: dow === 4 ? null : 25 * (1 + Math.floor(rnd() * 4)), rpe: dow === 4 ? null : 10 * (3 + Math.floor(rnd() * 5)),
       });
     }
     const steps = Math.round(7500 + (train ? 3000 : 0) + noise(2500));
@@ -52,4 +54,13 @@ export function sample(n: number, today = new Date().toISOString().slice(0, 10))
     prevSteps = steps;
   }
   return { days, activities };
+}
+
+// Demo detail goes through the real parser, so it has exactly the stored shape. 30 minutes at about 5:30/km with a little heart-rate drift.
+export function sampleDetail(id: number): Detail {
+  const date = (s: number): Date => new Date(Date.UTC(2026, 0, 1) + s * 1000);
+  const wobble = (s: number): number => Math.sin(s / 90 + id);
+  const recordMesgs = Array.from({ length: 1800 }, (_, s) => ({ timestamp: date(s), heartRate: Math.round(145 + s / 150 + 3 * wobble(s)), speed: 3 + 0.25 * wobble(s / 2) }));
+  const lapMesgs = Array.from({ length: 5 }, (_, i) => ({ startTime: date(i * 360), totalElapsedTime: 360, totalDistance: 1090, avgHeartRate: 147 + 2 * i, avgSpeed: 3.03 }));
+  return buildDetail({ recordMesgs, lapMesgs, hrZoneMesgs: [100, 120, 140, 155, 170, 190].map((highBpm) => ({ highBpm })) });
 }

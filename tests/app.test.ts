@@ -30,12 +30,13 @@ test('normalize maps Garmin spec fields', () => {
     daily: [{ calendarDate: '2026-11-01', movement: { steps: { goal: 10000, value: 9000, distanceInMeters: 6800 } }, calories: { burnedTotal: 2500 }, heartRate: { restingValue: 52 }, intensityMinutes: { moderate: 10, vigorous: 5 }, stress: { avgLevel: 30 }, bodyBattery: { maxValue: 90, minValue: 20 } }],
     hrv: [{ calendarDate: '2026-11-01', lastNightAvg: 55, weeklyAvg: 53 }],
     sleep: [{ calendarDate: '2026-11-01', sleepTimeSeconds: 27000, deepSleepSeconds: 3600 }],
-    acts: [{ activityId: 7, startTimeLocal: '2026-11-01 07:00:00', activityName: 'Run', activityType: { typeKey: 'running' }, duration: 1800, distance: 5000, activityTrainingLoad: 120, hrTimeInZone_2: 600 }],
+    acts: [{ activityId: 7, startTimeLocal: '2026-11-01 07:00:00', activityName: 'Run', activityType: { typeKey: 'running' }, duration: 1800, distance: 5000, activityTrainingLoad: 120, hrTimeInZone_2: 600, directWorkoutFeel: 75, directWorkoutRpe: 50 }],
   });
   assert.deepEqual(out.days[0], { date: '2026-11-01', steps: 9000, stepGoal: 10000, distanceM: 6800, calories: 2500, restingHr: 52, intensityMin: 20, stress: 30, bbHigh: 90, bbLow: 20, hrv: 55, hrvWeekly: 53, sleepH: 7.5, deepH: 1, remH: null, lightH: null, awakeH: null, sleepScore: null, bedtime: null, wake: null });
   assert.equal(out.activities[0].date, '2026-11-01');
   assert.equal(out.activities[0].km, 5);
   assert.deepEqual(out.activities[0].zones, [0, 600, 0, 0, 0]);
+  assert.deepEqual([out.activities[0].feel, out.activities[0].rpe], [75, 50]);
 });
 
 test('normalize skips records without a date instead of crashing', () => {
@@ -278,13 +279,20 @@ test('the session endpoint needs a session and a valid id, and reports not store
   assert.equal((await ask('/api/session?id=1', {})).status, 401);
   assert.equal((await ask('/api/session?id=abc')).status, 400);
   assert.equal((await ask('/api/session?id=-3')).status, 400);
-  const saved = process.env.DATABASE_URL;
+  const saved = { ...process.env };
   delete process.env.DATABASE_URL;
   try {
-    const ok = await ask('/api/session?id=12');
-    assert.equal(ok.status, 200);
-    assert.deepEqual(JSON.parse(ok.body), { stored: false });
+    process.env.GARMIN_API_KEY = 'k';
+    const none = await ask('/api/session?id=12');
+    assert.equal(none.status, 200);
+    assert.deepEqual(JSON.parse(none.body), { stored: false, detail: null });
+    delete process.env.GARMIN_API_KEY; // demo: detail comes from the sample parser
+    const demo = JSON.parse((await ask('/api/session?id=12')).body) as { stored: boolean; detail: { laps: unknown[]; metrics: { methodVersion: number } } };
+    assert.equal(demo.stored, true);
+    assert.equal(demo.detail.laps.length, 5);
+    assert.equal(demo.detail.metrics.methodVersion, 1);
   } finally {
-    if (saved !== undefined) process.env.DATABASE_URL = saved;
+    Object.assign(process.env, saved);
+    if (saved.GARMIN_API_KEY === undefined) delete process.env.GARMIN_API_KEY;
   }
 });

@@ -85,10 +85,15 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .fit-plot { width: 100%; }
 .fit-plot.tall { height: 220px; }
 .fit-plot.short { height: 110px; }
-.fit .ln { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.fit .ln, .run .ln { fill: none; stroke-width: 2; stroke-linejoin: round; }
 .fit .ln.fitness { stroke: var(--primary); }
 .fit .ln.fatigue { stroke: var(--ink-load); }
 .fit .ln.form { stroke: var(--ink-steps); }
+.run .ln.pace { stroke: var(--primary); }
+.run .ln.hr { stroke: var(--ink-hrv); }
+.laps { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.laps th, .laps td { text-align: left; padding: var(--sp-1) var(--sp-2); }
+.laps caption { text-align: left; }
 .fit .zero, .fit .ax line { stroke: var(--rule); }
 .fit .ax text { fill: var(--mfg); font: 0.75rem var(--sans); }
 .chips { display: flex; gap: var(--sp-2); overflow-x: auto; margin-bottom: var(--sp-3); }
