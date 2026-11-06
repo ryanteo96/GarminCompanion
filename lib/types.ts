@@ -63,6 +63,8 @@ export interface Payload {
   days: Day[];
   activities: Activity[];
   skipped?: Skipped;
+  /** Sessions being stored in the background after this response. */
+  syncing?: number;
 }
 
 // Garmin Connect Personal API records, only the fields normalize() reads.

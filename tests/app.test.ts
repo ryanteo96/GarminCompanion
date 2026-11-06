@@ -5,6 +5,7 @@ import type { ReadinessState } from '../src/logic/stats.js';
 import { addDays, clock, normalize, parseToken, pickToday, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
 import data from '../api/data.js';
+import activitiesApi from '../api/activities.js';
 import logout from '../api/logout.js';
 import { friendly } from '../src/logic/errors.js';
 import { ago } from '../src/logic/time.js';
@@ -269,4 +270,11 @@ test('loadSummary: sentence first, numbers in prose, tone matches the zone', () 
   assert.equal(empty.head, 'No training recorded in the last 28 days', 'zero load is not "missing history"');
   assert.doesNotMatch(empty.detail, /28 days of history/);
   assert.equal(empty.tone, '');
+});
+
+test('the stored-data wipe needs a session and only accepts DELETE', async () => {
+  const cookie = `gc=${mintCookie()}`;
+  assert.equal((await call(activitiesApi, { method: 'DELETE', headers: {} })).status, 401);
+  assert.equal((await call(activitiesApi, { method: 'GET', headers: { cookie } })).status, 405);
+  assert.equal((await call(activitiesApi, { method: 'DELETE', headers: { cookie } })).status, 200);
 });

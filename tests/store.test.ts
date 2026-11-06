@@ -232,3 +232,12 @@ test('a payload that cannot be read leaves the dashboard you already have and of
   assert.equal(state().days.length, 30, 'the good data stays');
   assert.equal(state().notice?.retry, true);
 });
+
+test('a payload with Sessions still syncing says so, and the wipe reports back', async () => {
+  vi.stubGlobal('fetch', () => reply(200, payload(30, { syncing: 3 })));
+  await state().load();
+  assert.match(state().notice?.text ?? '', /Syncing 3 activities/);
+  vi.stubGlobal('fetch', (url: string, init?: RequestInit) => (url === '/api/activities' && init?.method === 'DELETE' ? reply(200, { ok: true }) : reply(500)));
+  await state().deleteStored();
+  assert.match(state().notice?.text ?? '', /deleted/);
+});

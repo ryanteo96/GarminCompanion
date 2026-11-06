@@ -3,7 +3,7 @@ import type { ServerResponse } from 'node:http';
 import { afterEach, expect, test, vi } from 'vitest';
 
 const sync = vi.hoisted(() => vi.fn(() => Promise.resolve(0)));
-vi.mock('../lib/activities.js', () => ({ syncActivities: sync }));
+vi.mock('../lib/activities.js', () => ({ syncActivities: sync, pendingCount: () => Promise.resolve(2) }));
 vi.mock('@vercel/functions', () => ({ waitUntil: () => undefined }));
 
 afterEach(() => {
@@ -35,6 +35,7 @@ test('on a real load the response is sent first, then stored detail syncs for th
   const { res, out, close } = fakeRes();
   await handler({ method: 'GET', url: '/api/data?days=30&today=2026-11-06', headers: { cookie: `gc=${mintCookie()}` } } as never, res);
   assert.equal(out.status, 200);
+  assert.equal((JSON.parse(out.body) as { syncing: number }).syncing, 2);
   expect(sync).not.toHaveBeenCalled();
   close();
   await vi.waitFor(() => expect(sync).toHaveBeenCalledWith([], '2026-11-06'));
