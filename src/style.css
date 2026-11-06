@@ -113,7 +113,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .running .card > * + * { margin-top: var(--sp-5); }
 .fit-plot + .cap, .run > .cap { margin-top: var(--sp-3); }
 .bar.km { fill: var(--ink-fit); } .bar.load { fill: var(--ink-load); }
-.heat-cell { fill: var(--text); } .heat-dow { fill: var(--mfg); font: 0.75rem var(--sans); }
+.heat-cell { fill: var(--ink-load); } .heat-dow { fill: var(--mfg); font: 0.75rem var(--sans); }
 .bar.partial { fill-opacity: 0.45; }
 .laps { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .laps th, .laps td { text-align: left; padding: var(--sp-1) var(--sp-2); }
@@ -354,7 +354,7 @@ tbody tr:last-child td { border-bottom: 0; }
 /* GSAP moves everything on the heatmap: the cells' swell, the ring and the card. */
 .heat-cell.none { fill: var(--panel-2); }
 .heat-legend { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-1); margin-top: var(--sp-2); color: var(--mfg); font-size: 0.75rem; }
-.heat-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--text); }
+.heat-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--ink-load); }
 .heat-legend i.none { background: var(--panel-2); }
 .heat-legend span:first-child { margin-right: var(--sp-1); } .heat-legend span:last-child { margin-left: var(--sp-1); }
 .heat-ring { fill: none; stroke: var(--text); stroke-width: 1.5; opacity: 0; }
