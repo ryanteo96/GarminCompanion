@@ -43,7 +43,7 @@ function Svg({ width, x: xs, y: ys, cls, flip, fmt, xFmt, dots, domain }: PlotPr
 // A line chart read as one image: `label` is what a screen reader hears.
 export function Plot({ label, ...p }: PlotProps & { label: string }) {
   return (
-    <div role="img" aria-label={label} className="fit-plot short">
+    <div role="img" aria-label={label} className="fit-plot chart">
       <ParentSize debounceTime={50}>{({ width }) => width > 0 && <Svg width={width} {...p} />}</ParentSize>
     </div>
   );

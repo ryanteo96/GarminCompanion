@@ -32,7 +32,7 @@ function Svg({ width, weeks, k, cls }: { width: number; weeks: RunWeek[]; k: 'km
 // Weekly totals as bars; a partial week is drawn lighter.
 export function WeekBars({ label, ...p }: { label: string; weeks: RunWeek[]; k: 'km' | 'load'; cls: string }) {
   return (
-    <div role="img" aria-label={label} className="fit-plot short">
+    <div role="img" aria-label={label} className="fit-plot chart">
       <ParentSize debounceTime={50}>{({ width }) => width > 0 && <Svg width={width} {...p} />}</ParentSize>
     </div>
   );
