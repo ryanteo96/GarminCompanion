@@ -4,6 +4,7 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+shots/
 
 .claude/
 .impeccable/critique/
