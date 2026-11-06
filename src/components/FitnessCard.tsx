@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { fitnessSeries, type FitnessPoint } from '../logic/fitness.js';
 import { fmtDate, num } from '../logic/format.js';
 import { useStore } from '../store.js';
+import { Hover } from './Hover.js';
 
 const M = { top: 8, right: 12, bottom: 24, left: 36 };
 
@@ -26,6 +27,7 @@ function Plot({ width, height, points, keys }: { width: number; height: number; 
         {keys.map(({ k, cls }) => (
           <LinePath key={k} className={`ln ${cls}`} data={points} x={(p) => x(p.date) ?? 0} y={(p) => y(p[k])} />
         ))}
+        <Hover w={w} h={h} tips={points.map((p) => ({ x: x(p.date) ?? 0, dots: keys.map(({ k, cls }) => ({ y: y(p[k]), cls })), lines: [fmtDate(p.date), ...keys.map(({ k }) => `${k[0].toUpperCase()}${k.slice(1)} ${num(p[k])}`)] }))} />
       </Group>
     </svg>
   );
