@@ -1,6 +1,7 @@
 import { NavLink, useParams } from 'react-router';
 import { isSport, SPORTS, sportOf, sportsWithSessions } from '../logic/sports.js';
 import { useStore } from '../store.js';
+import { FitnessCard } from '../components/FitnessCard.js';
 import { ActivityPanel } from './ActivityPanel.js';
 import { Sessions, TrainingPanel } from './TrainingPanel.js';
 
@@ -40,6 +41,7 @@ export function ActivityRoute() {
       ) : (
         // Training merges into Activity in its own ticket; until then All shows both.
         <>
+          <FitnessCard />
           <TrainingPanel />
           <ActivityPanel />
         </>
