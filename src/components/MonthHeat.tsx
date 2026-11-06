@@ -26,6 +26,8 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
   const els = useRef(new Map<string, SVGRectElement>());
   const quick = useRef(new Map<string, Quick>());
   const ring = useRef<SVGRectElement>(null);
+  const ringLift = useRef<SVGGElement>(null);
+  const liftTo = useRef<ReturnType<typeof gsap.quickTo> | null>(null);
   const pop = useRef<HTMLDivElement>(null);
   const ringOn = useRef(false);
   const byDate = useMemo(() => {
@@ -55,9 +57,12 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
       // quickTo cannot drive the 'scale' shorthand, so each axis gets its own setter.
       quick.current.set(c.date, { sx: gsap.quickTo(el, 'scaleX', o), sy: gsap.quickTo(el, 'scaleY', o), y: gsap.quickTo(el, 'y', o) });
     }
+    // The ring's group rises with the chosen day on the same curve, so the ring stays centred however far that day has swelled.
+    liftTo.current = ringLift.current && gsap.quickTo(ringLift.current, 'y', { duration: 0.5 * k, ease: 'power3.out' });
   }, [cells, k]);
 
-  const swell = (p: [number, number] | null) => {
+  const swell = (p: [number, number] | null, chosen?: HeatCell) => {
+    if (!chosen) void liftTo.current?.(0);
     for (const c of cells) {
       const q = quick.current.get(c.date);
       if (!q) continue;
@@ -66,6 +71,7 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
       void q.sx(1 + MAGNIFY * w);
       void q.sy(1 + MAGNIFY * w);
       void q.y(-LIFT * w);
+      if (c === chosen) void liftTo.current?.(-LIFT * w);
     }
   };
 
@@ -78,7 +84,6 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
     const r = e.currentTarget.getBoundingClientRect();
     const p: [number, number] = [e.clientX - r.left, e.clientY - r.top - TOP];
     if (p[1] < 0) return clear(); // over the weekday letters
-    swell(p);
     let best = cells[0];
     let bd = Infinity;
     for (const c of cells) {
@@ -86,6 +91,7 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
       const d = (p[0] - cx) ** 2 + (p[1] - cy) ** 2;
       if (d < bd) { bd = d; best = c; }
     }
+    swell(p, best);
     if (best.date !== sel?.date) {
       setSel(best);
       setLast(best);
@@ -118,10 +124,11 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
     // Coming back while the ring is still fading out glides from where it is instead of snapping to nothing first.
     const first = resumed && Number(gsap.getProperty(r, 'opacity')) < 0.05;
     const [cx, cy] = centre(sel);
-    const to = { x: cx - RING / 2, y: cy - LIFT - RING / 2 };
+    const to = { x: cx - RING / 2, y: cy - RING / 2 }; // the lift lives on the ring's group
     if (resumed) gsap.killTweensOf(r);
     if (first) {
-      gsap.set(r, { ...to, transformOrigin: '50% 50%', scale: 0.8, opacity: 0 });
+      // smoothOrigin would keep a stale offset from the mount-time fade, which scaled about the corner.
+      gsap.set(r, { ...to, transformOrigin: '50% 50%', smoothOrigin: false, scale: 0.8, opacity: 0 });
       gsap.to(r, { opacity: 1, scale: 1, duration: 0.5 * k, ease: 'back.out(2.2)' });
     } else {
       gsap.to(r, { ...to, ...(resumed && { opacity: 1, scale: 1 }), duration: 0.45 * k, ease: 'power3.out', overwrite: 'auto' });
@@ -154,32 +161,37 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
   const total = cells.reduce((t, c) => t + c.load, 0);
   const active = cells.filter((c) => c.load > 0).length;
   const acts = last ? (byDate.get(last.date) ?? []) : [];
-  const fill = (c: HeatCell) => (c.load ? { fillOpacity: 0.25 + 0.75 * (c.load / max) } : undefined);
+  // Opaque, mixed against the card, so the redrawn chosen day and overlapping swelled cells do not darken where they stack.
+  const fill = (c: HeatCell) => (c.load ? { fill: `color-mix(in srgb, var(--ink-load) ${25 + 75 * (c.load / max)}%, var(--panel))` } : undefined);
 
   return (
     <div ref={root} className="heat" style={{ width }}>
       <svg
         width={width}
         height={height}
-        style={{ touchAction: 'pan-y', display: 'block' }}
+        style={{ touchAction: 'pan-y', display: 'block', overflow: 'visible' }} // swelled edge cells and the ring reach past the box
         role="img"
         aria-label={`Training load by day, ${cells.length} days: ${active} with load, ${num(total)} in total`}
         onPointerMove={aim}
         onPointerDown={aim}
         onPointerLeave={(e) => { if (e.pointerType !== 'touch') clear(); }}
+        onPointerCancel={clear} // the browser took the touch for a scroll, so it was not a tap on a day
       >
         {DOW.map((d, i) => <text key={i} className="heat-dow" x={(x(i) ?? 0) + x.bandwidth() / 2} y={TOP / 2} textAnchor="middle" dominantBaseline="central" aria-hidden="true">{d}</text>)}
         <Group top={TOP}>
           {cells.map((c) => (
             <rect
               key={c.date}
+              id={`heat-${c.date}`}
               ref={(el) => { if (el) els.current.set(c.date, el); else els.current.delete(c.date); }}
               className={`heat-cell${c.load ? '' : ' none'}`}
               x={x(c.row)} y={y(c.col)} width={x.bandwidth()} height={y.bandwidth()} rx={8}
               style={fill(c)}
             />
           ))}
-          <rect ref={ring} className="heat-ring" width={RING} height={RING} rx={RING * 0.32} pointerEvents="none" />
+          {/* SVG has no z-index: redraw the chosen day on top so its swelled neighbours drawn later do not cover it. */}
+          {last && <use href={`#heat-${last.date}`} pointerEvents="none" />}
+          <g ref={ringLift}><rect ref={ring} className="heat-ring" width={RING} height={RING} rx={RING * 0.32} pointerEvents="none" /></g>
         </Group>
       </svg>
       <div className="heat-legend" aria-hidden="true">
