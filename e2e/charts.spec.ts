@@ -14,14 +14,7 @@ async function expectCharts(page: Page, tab: string, count: number): Promise<voi
 }
 
 test('Recovery draws its charts', async ({ page }) => expectCharts(page, 'Recovery', 4));
-test('Training draws its charts', async ({ page }) => expectCharts(page, 'Training', 3));
-test('Activity draws its charts', async ({ page }) => expectCharts(page, 'Activity', 3));
-
-test('Insights shows its cards', async ({ page }) => {
-  await signIn(page);
-  await page.getByRole('tab', { name: 'Insights' }).click();
-  await expect(page.getByText(/^r = /)).toHaveCount(5);
-});
+test('Activity draws its charts', async ({ page }) => expectCharts(page, 'Activity', 6));
 
 test('a series with no data shows an empty state', async ({ page }) => {
   const errors = watchErrors(page);

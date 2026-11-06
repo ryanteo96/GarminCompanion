@@ -44,7 +44,7 @@ test('with nothing cached, a failed first load shows the error view and Try agai
 
 test('a 401 mid-session shows login and unlocking returns to the same tab', async ({ page }) => {
   await signIn(page);
-  await page.getByRole('tab', { name: 'Training' }).click();
+  await page.getByRole('tab', { name: 'Activity' }).click();
   await page.route('**/api/data*', (route) => route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }));
   await page.getByRole('button', { name: 'Refresh' }).click();
   const password = page.getByLabel('Password', { exact: true });
@@ -52,7 +52,7 @@ test('a 401 mid-session shows login and unlocking returns to the same tab', asyn
   await page.unroute('**/api/data*');
   await password.fill(process.env.E2E_PASSWORD ?? 'e2e-password');
   await page.getByRole('button', { name: 'Unlock' }).click();
-  await expect(page.getByRole('tab', { name: 'Training' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Activity' })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('records Garmin sent without a date are reported, not hidden', async ({ page }) => {
