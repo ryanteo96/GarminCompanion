@@ -5,6 +5,7 @@ import type { ReadinessState } from '../src/logic/stats.js';
 import { addDays, clock, normalize, parseToken, pickToday, ranges, token } from '../lib/garmin.js';
 import { sample } from '../lib/sample.js';
 import data from '../api/data.js';
+import sessionApi from '../api/session.js';
 import logout from '../api/logout.js';
 import { friendly } from '../src/logic/errors.js';
 import { ago } from '../src/logic/time.js';
@@ -269,4 +270,21 @@ test('loadSummary: sentence first, numbers in prose, tone matches the zone', () 
   assert.equal(empty.head, 'No training recorded in the last 28 days', 'zero load is not "missing history"');
   assert.doesNotMatch(empty.detail, /28 days of history/);
   assert.equal(empty.tone, '');
+});
+
+test('the session endpoint needs a session and a valid id, and reports not stored without a database', async () => {
+  const cookie = `gc=${mintCookie()}`;
+  const ask = (url: string, headers: Record<string, string> = { cookie }) => call(sessionApi, { url, headers });
+  assert.equal((await ask('/api/session?id=1', {})).status, 401);
+  assert.equal((await ask('/api/session?id=abc')).status, 400);
+  assert.equal((await ask('/api/session?id=-3')).status, 400);
+  const saved = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  try {
+    const ok = await ask('/api/session?id=12');
+    assert.equal(ok.status, 200);
+    assert.deepEqual(JSON.parse(ok.body), { stored: false });
+  } finally {
+    if (saved !== undefined) process.env.DATABASE_URL = saved;
+  }
 });

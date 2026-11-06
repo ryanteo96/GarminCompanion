@@ -71,3 +71,13 @@ test('sync stops starting new downloads after its deadline', async () => {
   const done = await syncActivities([act(1, '2026-11-05'), act(2, '2026-11-04')], TODAY, () => Promise.resolve(detail), Date.now() - 1);
   assert.equal(done, 0);
 });
+
+test('isStored asks only for detail stored by the current parser', async () => {
+  const { isStored, PARSER_VERSION } = await import('../lib/activities.js');
+  fake.rows = [{}];
+  assert.equal(await isStored(7), true);
+  fake.rows = [];
+  assert.equal(await isStored(7), false);
+  const q = fake.calls.find((c) => c.text.includes('detail is not null and parser_version'));
+  assert.deepEqual(q?.values, [7, PARSER_VERSION]);
+});

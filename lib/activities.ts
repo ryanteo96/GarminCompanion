@@ -43,6 +43,12 @@ export function pending(live: Activity[], rows: StoredRow[], today: string): Act
     .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 }
 
+// Whether this Session's detail is stored by the current parser. Reads the table only; a FIT file is never downloaded here.
+export async function isStored(id: number): Promise<boolean> {
+  const rows = (await (await open())`select 1 from activities where id = ${id} and detail is not null and parser_version = ${PARSER_VERSION}`) as unknown[];
+  return rows.length > 0;
+}
+
 const fetchDetail = async (id: number): Promise<Detail> => parseFit(await downloadActivity(id));
 
 // Returns how many Sessions were stored. Never throws: it runs after the response, where nobody can see an error.
