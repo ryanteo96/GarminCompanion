@@ -1,6 +1,7 @@
 import type { Detail } from '../../lib/fit.js';
 import { num, pace } from '../logic/format.js';
 import { Plot } from './Plot.js';
+import { Num } from './Num.js';
 
 export const FEEL = ['Very weak', 'Weak', 'Normal', 'Strong', 'Very strong']; // Garmin stores 0, 25, 50, 75, 100
 const mmss = (s: number | null): string => (s == null ? '—' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`);
@@ -27,7 +28,7 @@ export function RunBody({ detail: d, feel, rpe }: { detail: Detail; feel: number
         {facts.map(([k, v]) => (
           <div key={k}>
             <dt className="cap">{k}</dt>
-            <dd>{v}</dd>
+            <dd><Num>{String(v)}</Num></dd>
           </div>
         ))}
       </dl>

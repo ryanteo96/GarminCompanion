@@ -12,6 +12,7 @@ import { latest, series14, withAge } from '../logic/days.js';
 import { fmtDate, hm, localToday, num } from '../logic/format.js';
 import { explain, loadSeries, loadZone, ratioLabel, readiness, verdict, verdictTone, weekly, type LoadZone, type Readiness, type ReadinessKey } from '../logic/stats.js';
 import { useStore } from '../store.js';
+import { Num } from '../components/Num.js';
 
 // The four signals behind the readiness score, each as a card that says how it compares with your usual.
 const SIGNALS: [ReadinessKey, string, string, string, string][] = [['hrv', 'hrv', 'HRV', 'ms', 'Last night'], ['restingHr', 'rhr', 'Resting HR', 'bpm', 'Daily'], ['sleepH', 'sleep', 'Sleep', '', 'Last night'], ['bbHigh', 'bb', 'Body Battery', '', 'Daily peak']];
@@ -53,7 +54,7 @@ export function Today({ r, days, compact }: { r: Readiness | null; days: DayWith
       score={
         <div className="today-score">
           <p className="score">
-            <span id="score-n" className="score-n">{r.score}</span>
+            <span id="score-n" className="score-n"><Num>{String(r.score)}</Num></span>
             <span className="of">of 100</span>
           </p>
           <p id="score-state" className="state">{r.label}</p>

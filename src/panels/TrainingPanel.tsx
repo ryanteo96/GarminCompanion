@@ -10,6 +10,7 @@ import { useLayout } from '../layout.js';
 import { fmtDate, num } from '../logic/format.js';
 import { loadSeries, loadSummary, ratioLabel, ratioPos, weekly, type LoadPoint } from '../logic/stats.js';
 import { useStore } from '../store.js';
+import { Num } from '../components/Num.js';
 
 const newestFirst = (a: Activity, b: Activity): number => b.date.localeCompare(a.date) || b.id - a.id;
 const ZONE_NAMES = ['Z1 Warm-up', 'Z2 Easy', 'Z3 Aerobic', 'Z4 Threshold', 'Z5 Maximum'];
@@ -62,7 +63,7 @@ export function LoadHero({ last, compact, children }: { last: LoadPoint; compact
           {ratio != null && (
             <>
               <p className="score">
-                <span id="load-n" className="score-n">{ratio.toFixed(2)}</span>
+                <span id="load-n" className="score-n"><Num>{ratio.toFixed(2)}</Num></span>
                 <span className="of">ratio</span>
               </p>
               <p id="load-state" className="state">{ratioLabel(ratio)}</p>

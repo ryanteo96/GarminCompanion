@@ -5,6 +5,7 @@ import { sportOf, SPORTS, type SportSlug } from '../logic/sports.js';
 import type { Detail } from '../../lib/fit.js';
 import { RunBody } from '../components/RunBody.js';
 import { useStore } from '../store.js';
+import { Num } from '../components/Num.js';
 
 const BACKFILL_DAYS = 90; // ADR 0005: older Sessions are not stored
 const cutoff = (): string => {
@@ -52,7 +53,7 @@ export function SessionPage({ sport, id }: { sport: SportSlug; id: number }) {
         {facts.map(([k, v]) => (
           <div key={k}>
             <dt className="cap">{k}</dt>
-            <dd>{v}</dd>
+            <dd><Num>{String(v)}</Num></dd>
           </div>
         ))}
       </dl>
