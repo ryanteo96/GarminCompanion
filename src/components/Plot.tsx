@@ -3,6 +3,7 @@ import { Group } from '@visx/group';
 import { ParentSize } from '@visx/responsive';
 import { scaleLinear } from '@visx/scale';
 import { LinePath } from '@visx/shape';
+import { Hover } from './Hover.js';
 
 const M = { top: 8, right: 12, bottom: 24, left: 40 };
 
@@ -33,6 +34,7 @@ function Svg({ width, x: xs, y: ys, cls, flip, fmt, xFmt, dots, domain }: PlotPr
         <AxisBottom scale={x} top={h} numTicks={5} tickFormat={(v) => xFmt(Number(v))} axisClassName="ax" tickClassName="ax" />
         <LinePath className={`ln ${cls}`} data={pts} x={(p) => x(p.x)} y={(p) => y(p.v)} />
         {dots && pts.map((p, i) => <circle key={i} className={`dot ${cls}`} cx={x(p.x)} cy={y(p.v)} r={3} />)}
+        <Hover w={w} h={h} tips={pts.map((p) => ({ x: x(p.x), dots: [{ y: y(p.v), cls }], lines: [xFmt(p.x), fmt(p.v)] }))} />
       </Group>
     </svg>
   );

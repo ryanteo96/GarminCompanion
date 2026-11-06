@@ -3,7 +3,8 @@ import { Group } from '@visx/group';
 import { ParentSize } from '@visx/responsive';
 import { scaleBand, scaleLinear } from '@visx/scale';
 import type { RunWeek } from '../logic/running.js';
-import { fmtDate } from '../logic/format.js';
+import { fmtDate, num } from '../logic/format.js';
+import { Hover } from './Hover.js';
 
 const M = { top: 8, right: 12, bottom: 24, left: 40 };
 
@@ -22,6 +23,7 @@ function Svg({ width, weeks, k, cls }: { width: number; weeks: RunWeek[]; k: 'km
         {weeks.map((d) => (
           <rect key={d.week} className={`bar ${cls}${d.partial ? ' partial' : ''}`} x={x(d.week)} y={y(d[k])} width={x.bandwidth()} height={h - y(d[k])} />
         ))}
+        <Hover w={w} h={h} tips={weeks.map((d) => ({ x: (x(d.week) ?? 0) + x.bandwidth() / 2, dots: [{ y: y(d[k]), cls }], lines: [`Week of ${fmtDate(d.week)}${d.partial ? ' (partial)' : ''}`, k === 'km' ? `${num(d.km, 1)} km` : `Load ${num(d.load)}`] }))} />
       </Group>
     </svg>
   );
