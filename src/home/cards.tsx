@@ -4,7 +4,8 @@ import { IntensityCard, StepsCard, StressCard } from '../panels/ActivityPanel.js
 import { LoadHero, Sessions } from '../panels/TrainingPanel.js';
 import { WeekCard } from '../panels/WeekCard.js';
 import { MonthHeat } from '../components/MonthHeat.js';
-import { heatmap, loadSeries, readiness, type ReadinessKey } from '../logic/stats.js';
+import { heatmap, loadSeries, mean, readiness, type ReadinessKey } from '../logic/stats.js';
+import { num } from '../logic/format.js';
 import { useStore } from '../store.js';
 import type { CardId } from './layout.js';
 
@@ -50,11 +51,28 @@ function SessionsCard() {
 
 function MonthCard() {
   const days = useStore((s) => s.days);
+  const activities = useStore((s) => s.activities);
   const cells = useMemo(() => heatmap(days), [days]);
+  const since = days.at(-7)?.date ?? '0000';
+  const week = activities.filter((a) => a.date >= since);
+  const te = mean(week.map((a) => a.te));
+  const stats: [string, string][] = [
+    ['Load, 7 days', num(week.reduce((t, a) => t + (a.load ?? 0), 0))],
+    ['Training effect, avg', te == null ? '\u2014' : num(te, 1)],
+    ['Sessions', String(week.length)],
+    ['Hours', num(week.reduce((t, a) => t + (a.minutes ?? 0), 0) / 60, 1)],
+  ];
   return (
     <section className="card" aria-labelledby="month-h">
       <h3 id="month-h" className="cap">Training load, last 5 weeks</h3>
-      <MonthHeat cells={cells} />
+      <div className="month">
+        <MonthHeat cells={cells} activities={activities} />
+        <dl className="month-stats">
+          {stats.map(([k, v]) => (
+            <div key={k}><dt className="muted">{k}</dt><dd>{v}</dd></div>
+          ))}
+        </dl>
+      </div>
     </section>
   );
 }

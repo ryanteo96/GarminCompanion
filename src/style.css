@@ -328,4 +328,9 @@ th { color: var(--mfg); font-weight: 600; } .num { text-align: right; }
 table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 th, td { text-align: left; padding: var(--sp-2) var(--sp-2); border-bottom: 1px solid var(--rule); white-space: nowrap; }
 th { color: var(--mfg); font-weight: 600; } .num { text-align: right; }
-.heat { width: 100%; height: 154px; }
+.heat { position: relative; max-width: 100%; }
+.heat-cell.on { stroke: var(--text); stroke-width: 2; }
+.heat-pop { position: absolute; z-index: 1; min-width: 160px; max-width: 240px; padding: var(--sp-2) var(--sp-3); background: var(--panel-2); border: 1px solid var(--rule); border-radius: 8px; font-size: 0.8125rem; pointer-events: none; }
+.month { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: flex-start; }
+.month-stats { flex: 1 1 14rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3) var(--sp-4); margin: 0; }
+.month-stats dd { margin: 0; font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
