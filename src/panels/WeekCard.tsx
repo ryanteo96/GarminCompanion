@@ -40,7 +40,7 @@ export function WeekCard() {
               <tr><td colSpan={4} className="muted">Not enough history yet. It needs about a week of data plus earlier days to compare against.</td></tr>
             )}
             {deltas.map((x) => (
-              <tr key={x.k}>
+              <tr key={x.k} className={Math.abs(x.pct) < 3 ? 'quiet' : undefined}>
                 <td>{`${x.label}${x.unit && x.k !== 'sleepH' ? ` (${x.unit})` : ''}`}</td>
                 <td className="num">{x.k === 'sleepH' ? hm(x.now) : num(x.now, x.now < 100 ? 1 : 0)}</td>
                 <td className="num">{x.k === 'sleepH' ? hm(x.prev) : num(x.prev, x.prev < 100 ? 1 : 0)}</td>

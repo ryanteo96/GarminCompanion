@@ -25,9 +25,9 @@ test('the production build runs without CSP violations', async ({ page }) => {
   await expect(dialog).toContainText('Picked up HRV');
   await page.waitForTimeout(100); // dnd-kit starts listening for arrow keys one tick after the lift
   await page.keyboard.press('ArrowDown');
-  await expect(dialog).toContainText('HRV moved to position 3 of 12');
+  await expect(dialog).toContainText('HRV moved to position 3 of 11');
   await page.keyboard.press('Space');
-  await expect(dialog).toContainText('HRV dropped at position 3 of 12');
+  await expect(dialog).toContainText('HRV dropped at position 3 of 11');
   await page.keyboard.press('Escape');
   expect(await page.evaluate(() => (window as unknown as WithViolations).__csp)).toEqual([]);
   expect(errors).toEqual([]);

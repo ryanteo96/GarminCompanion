@@ -16,7 +16,7 @@ const RING = CELL * (1 + MAGNIFY) + 4;
 
 type Quick = { s: ReturnType<typeof gsap.quickTo>; y: ReturnType<typeof gsap.quickTo> };
 
-// Daily training load, one row per week (oldest first) and one column per weekday; darker means more load, grey means none.
+// Daily training load, one row per week (oldest first) and one column per weekday; brighter (darker in light mode) means more load, grey means none.
 // Under a pointer the grid swells like the Dock around it, a ring glides to the nearest day and a frosted card lists that day's activities.
 export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities: Activity[] }) {
   const [sel, setSel] = useState<HeatCell | null>(null);
@@ -144,11 +144,11 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
   const fill = (c: HeatCell) => (c.load ? { fillOpacity: 0.25 + 0.75 * (c.load / max) } : undefined);
 
   return (
-    <div ref={root} className="heat" style={{ width, height }}>
+    <div ref={root} className="heat" style={{ width }}>
       <svg
         width={width}
         height={height}
-        style={{ touchAction: 'pan-y' }}
+        style={{ touchAction: 'pan-y', display: 'block' }}
         role="img"
         aria-label={`Training load by day, ${cells.length} days: ${active} with load, ${num(total)} in total`}
         onPointerMove={aim}
@@ -169,6 +169,12 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
           <rect ref={ring} className="heat-ring" width={RING} height={RING} rx={RING * 0.32} pointerEvents="none" />
         </Group>
       </svg>
+      <div className="heat-legend" aria-hidden="true">
+        <span>Less</span>
+        <i className="heat-cell none" />
+        {[0.25, 0.5, 0.75, 1].map((o) => <i key={o} style={{ opacity: o }} />)}
+        <span>More</span>
+      </div>
       <div ref={pop} className="heat-pop" role="status" aria-live="polite">
         {last && (
           <>

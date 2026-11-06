@@ -15,11 +15,14 @@ const newestFirst = (a: Activity, b: Activity): number => b.date.localeCompare(a
 const ZONE_NAMES = ['Z1 Warm-up', 'Z2 Easy', 'Z3 Aerobic', 'Z4 Threshold', 'Z5 Maximum'];
 const ZONE_TOKENS = ['--z1', '--z2', '--z3', '--z4', '--z5'];
 
-export function Sessions({ activities, since }: { activities: Activity[]; since: (n: number) => string }) {
+// `brief` is the Home card: more rows and a plain title, since the heatmap card beside it already totals the week.
+export function Sessions({ activities, since, brief }: { activities: Activity[]; since: (n: number) => string; brief?: boolean }) {
   const week = activities.filter((a) => a.date >= since(7));
   const hours = week.reduce((t, a) => t + (a.minutes ?? 0), 0) / 60;
-  const three = [...activities].sort(newestFirst).slice(0, 3);
-  const heading = three.length
+  const three = [...activities].sort(newestFirst).slice(0, brief ? 4 : 3);
+  const heading = brief && three.length
+    ? 'Recent sessions'
+    : three.length
     ? `Your last ${three.length} session${three.length === 1 ? '' : 's'}: ${week.length ? `${week.length} in the last 7 days, ${num(hours, 1)} h` : 'none in the last 7 days'}`
     : 'No sessions recorded in this range';
   return (

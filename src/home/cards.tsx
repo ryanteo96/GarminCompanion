@@ -1,10 +1,10 @@
 import { useMemo, type ComponentType } from 'react';
 import { Today, SignalCard } from '../panels/RecoveryPanel.js';
 import { IntensityCard, StepsCard, StressCard } from '../panels/ActivityPanel.js';
-import { LoadHero, Sessions } from '../panels/TrainingPanel.js';
+import { Sessions } from '../panels/TrainingPanel.js';
 import { WeekCard } from '../panels/WeekCard.js';
 import { MonthHeat } from '../components/MonthHeat.js';
-import { heatmap, loadSeries, mean, readiness, type ReadinessKey } from '../logic/stats.js';
+import { heatmap, mean, readiness, type ReadinessKey } from '../logic/stats.js';
 import { num } from '../logic/format.js';
 import { useStore } from '../store.js';
 import type { CardId } from './layout.js';
@@ -32,19 +32,13 @@ const signal = (k: ReadinessKey): ComponentType =>
     return <SignalCard k={k} days={days} r={r} n={N} />;
   };
 
-function LoadCard() {
-  const days = useStore((s) => s.days);
-  const ls = useMemo(() => loadSeries(days), [days]);
-  return <LoadHero last={ls[ls.length - 1]} compact />;
-}
-
 function SessionsCard() {
   const days = useStore((s) => s.days);
   const activities = useStore((s) => s.activities);
   const since = (n: number): string => days.at(-n)?.date ?? '0000';
   return (
     <section className="card" aria-labelledby="sessions-h">
-      <Sessions activities={activities} since={since} />
+      <Sessions activities={activities} since={since} brief />
     </section>
   );
 }
@@ -94,9 +88,8 @@ export const CARDS: Record<CardId, CardDef> = {
   'resting-hr': { title: 'Resting HR', group: 'recovery', span: 1, Component: signal('restingHr') },
   sleep: { title: 'Sleep', group: 'recovery', span: 1, Component: signal('sleepH') },
   'body-battery': { title: 'Body Battery', group: 'recovery', span: 1, Component: signal('bbHigh') },
-  load: { title: 'Training load', group: 'training', span: 2, Component: LoadCard },
   sessions: { title: 'Recent sessions', group: 'training', span: 2, Component: SessionsCard },
-  week: { title: 'This week', group: 'training', span: 2, Component: WeekCard },
+  week: { title: 'This week', group: 'training', span: 'full', Component: WeekCard },
   month: { title: 'Month heatmap', group: 'training', span: 2, Component: MonthCard },
   steps: { title: 'Steps', group: 'today', span: 1, Component: Steps },
   intensity: { title: 'Intensity minutes', group: 'today', span: 1, Component: Intensity },
