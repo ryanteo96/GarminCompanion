@@ -8,8 +8,8 @@ import type { HeatCell } from '../logic/stats.js';
 
 const DOW = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const TOP = 16;
-const STEP = 24; // cell plus gap
-const CELL = 20;
+const STEP = 32; // cell plus gap
+const CELL = 28;
 const MAGNIFY = 0.3; // extra scale of the cell under the pointer
 const REACH = 1.1; // how far, in cells, the magnification spreads
 const RING = CELL * (1 + MAGNIFY) + 4;
@@ -162,7 +162,7 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
               key={c.date}
               ref={(el) => { if (el) els.current.set(c.date, el); else els.current.delete(c.date); }}
               className={`heat-cell${c.load ? '' : ' none'}`}
-              x={x(c.row)} y={y(c.col)} width={x.bandwidth()} height={y.bandwidth()} rx={6}
+              x={x(c.row)} y={y(c.col)} width={x.bandwidth()} height={y.bandwidth()} rx={8}
               style={fill(c)}
             />
           ))}

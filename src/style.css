@@ -253,9 +253,9 @@ figcaption, .cap { margin: 0 0 var(--sp-3); font-size: 0.9375rem; font-weight: 6
 .sheet-group { font-size: 0.75rem; color: var(--mfg); }
 .sheet-switch { display: grid; place-items: center; min-width: 52px; min-height: 44px; cursor: pointer; }
 .sheet-switch input { appearance: none; position: relative; width: 44px; height: 26px; margin: 0; background: var(--panel-2); border: 0; border-radius: 13px; cursor: pointer; transition: background 0.15s; }
-.sheet-switch input::before { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; background: #ffffff; border-radius: 50%; transition: transform 0.15s; }
+.sheet-switch input::before { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; background: var(--mfg); border-radius: 50%; transition: transform 0.15s; }
 .sheet-switch input:checked { background: var(--st-well); }
-.sheet-switch input:checked::before { transform: translateX(18px); }
+.sheet-switch input:checked::before { transform: translateX(18px); background: var(--on-primary); }
 .sheet-foot { position: sticky; bottom: 0; display: flex; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--rule); }
 .home-empty { color: var(--mfg); }
 .sheet-list { margin: 0 0 var(--sp-3); padding: 0; list-style: none; }
