@@ -63,12 +63,12 @@ test('the sheet reorders rows with the keyboard', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Customize Home' });
   await page.getByRole('button', { name: 'Move Resting HR' }).focus();
   await page.keyboard.press('Space');
-  await expect(dialog).toContainText('Picked up Resting HR, position 3 of 10');
+  await expect(dialog).toContainText('Picked up Resting HR, position 3 of 12');
   await page.waitForTimeout(100); // dnd-kit starts listening for arrow keys one tick after the lift; a person is never that fast
   await page.keyboard.press('ArrowUp');
-  await expect(dialog).toContainText('Resting HR moved to position 2 of 10');
+  await expect(dialog).toContainText('Resting HR moved to position 2 of 12');
   await page.keyboard.press('Space');
-  await expect(dialog).toContainText('Resting HR dropped at position 2 of 10');
+  await expect(dialog).toContainText('Resting HR dropped at position 2 of 12');
   expect((await rowTitles(page)).slice(0, 3)).toEqual(['Readiness', 'Resting HR', 'HRV']);
   const order = () => page.locator('.home-grid [data-card]').evaluateAll((els) => els.map((el) => el.getAttribute('data-card')));
   expect((await order()).slice(0, 3)).toEqual(['readiness', 'resting-hr', 'hrv']);
@@ -85,10 +85,10 @@ test('Escape during a drag cancels the drag, not the sheet', async ({ page }) =>
   const dialog = page.getByRole('dialog', { name: 'Customize Home' });
   await page.getByRole('button', { name: 'Move Sleep' }).focus();
   await page.keyboard.press('Space');
-  await expect(dialog).toContainText('Picked up Sleep, position 4 of 10');
+  await expect(dialog).toContainText('Picked up Sleep, position 4 of 12');
   await page.waitForTimeout(100); // as above
   await page.keyboard.press('ArrowDown');
-  await expect(dialog).toContainText('Sleep moved to position 5 of 10');
+  await expect(dialog).toContainText('Sleep moved to position 5 of 12');
   await page.keyboard.press('Escape');
   await expect(dialog).toContainText('Moving Sleep cancelled');
   await expect(dialog).toBeVisible();
@@ -132,7 +132,7 @@ test('a saved layout is there on first paint and unknown ids are ignored', async
 });
 
 const order = (page: Page) => page.locator('.home-grid [data-card]').evaluateAll((els) => els.map((el) => el.getAttribute('data-card')));
-const DEFAULT = ['readiness', 'hrv', 'resting-hr', 'sleep', 'body-battery', 'load', 'sessions', 'steps', 'intensity', 'stress'];
+const DEFAULT = ['readiness', 'hrv', 'resting-hr', 'sleep', 'body-battery', 'load', 'week', 'month', 'sessions', 'steps', 'intensity', 'stress'];
 
 test('hide, show and reset from the sheet survive a reload', async ({ page }) => {
   await signIn(page);
@@ -231,8 +231,8 @@ test('a remote layout that arrives while the sheet is open waits', async ({ page
   release();
   await answered;
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(r)));
-  expect(await order(page)).toHaveLength(10);
-  await expect(page.getByRole('dialog', { name: 'Customize Home' }).locator('.sheet-shown .sheet-row')).toHaveCount(10);
+  expect(await order(page)).toHaveLength(12);
+  await expect(page.getByRole('dialog', { name: 'Customize Home' }).locator('.sheet-shown .sheet-row')).toHaveCount(12);
 });
 
 test('a 401 from the layout calls is ignored', async ({ page }) => {

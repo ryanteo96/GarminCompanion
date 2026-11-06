@@ -2,7 +2,9 @@ import { useMemo, type ComponentType } from 'react';
 import { Today, SignalCard } from '../panels/RecoveryPanel.js';
 import { IntensityCard, StepsCard, StressCard } from '../panels/ActivityPanel.js';
 import { LoadHero, Sessions } from '../panels/TrainingPanel.js';
-import { loadSeries, readiness, type ReadinessKey } from '../logic/stats.js';
+import { WeekCard } from '../panels/WeekCard.js';
+import { MonthHeat } from '../components/MonthHeat.js';
+import { heatmap, loadSeries, readiness, type ReadinessKey } from '../logic/stats.js';
 import { useStore } from '../store.js';
 import type { CardId } from './layout.js';
 
@@ -46,6 +48,17 @@ function SessionsCard() {
   );
 }
 
+function MonthCard() {
+  const days = useStore((s) => s.days);
+  const cells = useMemo(() => heatmap(days), [days]);
+  return (
+    <section className="card" aria-labelledby="month-h">
+      <h3 id="month-h" className="cap">Training load, last 5 weeks</h3>
+      <MonthHeat cells={cells} />
+    </section>
+  );
+}
+
 function Steps() {
   return <StepsCard days={useStore((s) => s.days)} n={N} />;
 }
@@ -65,6 +78,8 @@ export const CARDS: Record<CardId, CardDef> = {
   'body-battery': { title: 'Body Battery', group: 'health', span: 1, Component: signal('bbHigh') },
   load: { title: 'Training load', group: 'training', span: 2, Component: LoadCard },
   sessions: { title: 'Recent sessions', group: 'training', span: 2, Component: SessionsCard },
+  week: { title: 'This week', group: 'training', span: 'full', Component: WeekCard },
+  month: { title: 'Month heatmap', group: 'training', span: 2, Component: MonthCard },
   steps: { title: 'Steps', group: 'training', span: 1, Component: Steps },
   intensity: { title: 'Intensity minutes', group: 'training', span: 1, Component: Intensity },
   stress: { title: 'Stress', group: 'health', span: 1, Component: Stress },

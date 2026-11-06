@@ -109,6 +109,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .running .card > * + * { margin-top: var(--sp-5); }
 .fit-plot + .cap, .run > .cap { margin-top: var(--sp-3); }
 .bar.km { fill: var(--primary); } .bar.load { fill: var(--ink-load); }
+.heat-cell { fill: var(--ink-load); } .heat-dow { fill: var(--mfg); font: 0.75rem var(--sans); }
 .bar.partial { fill-opacity: 0.45; }
 .laps { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .laps th, .laps td { text-align: left; padding: var(--sp-1) var(--sp-2); }
@@ -210,7 +211,7 @@ figcaption, .cap { margin: 0 0 var(--sp-3); font-size: 0.875rem; font-weight: 60
 
 /* ---- Home: phone first, widened at 820px and 1061px ---- */
 .home-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
-.home-cell { display: grid; grid-column: span 1; min-width: 0; }
+.home-cell { display: grid; grid-template-columns: minmax(0, 1fr); grid-column: span 1; min-width: 0; }
 .home-cell[data-span="full"], .home-cell[data-span="2"] { grid-column: 1 / -1; }
 .home-cell > .card { height: 100%; }
 .home-cell .today.compact { grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); margin-bottom: 0; padding: var(--sp-4); }
@@ -323,3 +324,8 @@ th { color: var(--mfg); font-weight: 600; } .num { text-align: right; }
 .session-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: var(--sp-3); margin: var(--sp-3) 0; }
 .session-facts dd { margin: 0; font-size: 1.25rem; font-weight: 600; }
 .a-name a { color: inherit; text-decoration: none; } .a-name a:hover { text-decoration: underline; }
+.tablewrap { position: relative; /* contains the .sr-only spans inside, which are absolutely positioned and otherwise widen the page */ overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--rule) transparent; }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+th, td { text-align: left; padding: var(--sp-2) var(--sp-2); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { color: var(--mfg); font-weight: 600; } .num { text-align: right; }
+.heat { width: 100%; height: 154px; }

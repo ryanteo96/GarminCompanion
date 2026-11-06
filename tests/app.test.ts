@@ -11,7 +11,7 @@ import logout from '../api/logout.js';
 import { friendly } from '../src/logic/errors.js';
 import { ago } from '../src/logic/time.js';
 import { call } from './stubs.js';
-import { band, corr, explain, isPartialWeek, loadBand, loadSummary, loadZone, ratioLabel, ratioPos, insights, loadSeries, readiness, rolling, verdict, verdictTone, weekDeltas, weekStart, withLoad } from '../src/logic/stats.js';
+import { band, corr, explain, isPartialWeek, loadBand, loadSummary, loadZone, ratioLabel, ratioPos, insights, loadSeries, readiness, rolling, verdict, verdictTone, heatmap, weekDeltas, weekStart, withLoad } from '../src/logic/stats.js';
 
 process.env.SESSION_SECRET = 'test-secret-0123456789';
 
@@ -182,6 +182,16 @@ test('weekDeltas says which direction is good', () => {
   assert.equal(by.load.good, 0);
   assert.ok(by.hrv.pct > 15 && by.restingHr.pct > 8);
   assert.equal(by.steps, undefined, 'metrics with no data are left out');
+});
+
+test('heatmap aligns the last weeks to Monday and fills gaps with no load', () => {
+  const days = [{ date: '2026-10-14', load: 80 }, { date: '2026-10-16', load: 40 }]; // Wed, Fri
+  const cells = heatmap(days, 2);
+  assert.equal(cells[0].date, '2026-10-05');
+  assert.equal(cells[0].row, 0);
+  assert.equal(cells.at(-1)?.date, '2026-10-16');
+  assert.deepEqual(cells.filter((c) => c.load).map((c) => [c.date, c.col, c.row]), [['2026-10-14', 1, 2], ['2026-10-16', 1, 4]]);
+  assert.deepEqual(heatmap([]), []);
 });
 
 test('data responses are never cacheable, whether authorised or not', async () => {
