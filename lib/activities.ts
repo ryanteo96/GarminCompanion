@@ -49,6 +49,14 @@ export async function storedDetail(id: number): Promise<Detail | null> {
   return rows[0]?.detail ?? null;
 }
 
+export interface Z2 { speed: number; hr: number }
+
+// Zone 2 pace and heart rate of each of these Sessions that has them stored by the current parser. Reads the table only.
+export async function storedZ2(ids: number[]): Promise<Record<number, Z2>> {
+  const rows = (await (await open())`select id, detail->'metrics'->>'z2Speed' as speed, detail->'metrics'->>'z2Hr' as hr from activities where id = any(${ids}::bigint[]) and detail is not null and parser_version = ${PARSER_VERSION}`) as { id: number | string; speed: string | null; hr: string | null }[];
+  return Object.fromEntries(rows.flatMap((r) => (r.speed && r.hr ? [[Number(r.id), { speed: Number(r.speed), hr: Number(r.hr) }]] : [])));
+}
+
 // How many Sessions the next sync will download, for the "syncing N" notice. 0 when storage is off or unreachable.
 export async function pendingCount(live: Activity[], today: string): Promise<number> {
   if (!process.env.DATABASE_URL) return 0;

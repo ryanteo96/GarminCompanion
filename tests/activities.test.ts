@@ -95,3 +95,11 @@ test('deleteStored wipes the table', async () => {
   await deleteStored();
   assert.ok(fake.calls.some((c) => c.text === 'delete from activities'));
 });
+
+test('storedZ2 reads Zone 2 pace and heart rate stored by the current parser, skipping runs without them', async () => {
+  const { storedZ2, PARSER_VERSION } = await import('../lib/activities.js');
+  fake.rows = [{ id: '7', speed: '3.1', hr: '142' }, { id: '8', speed: null, hr: null }];
+  assert.deepEqual(await storedZ2([7, 8]), { 7: { speed: 3.1, hr: 142 } });
+  const q = fake.calls.find((c) => c.text.includes('parser_version ='));
+  assert.deepEqual(q?.values, [[7, 8], PARSER_VERSION]);
+});

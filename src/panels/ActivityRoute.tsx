@@ -3,6 +3,7 @@ import { isSport, SPORTS, sportOf, sportsWithSessions } from '../logic/sports.js
 import { useStore } from '../store.js';
 import { FitnessCard } from '../components/FitnessCard.js';
 import { ActivityPanel } from './ActivityPanel.js';
+import { RunningPage } from './RunningPage.js';
 import { SessionPage } from './SessionPage.js';
 import { Sessions, TrainingPanel } from './TrainingPanel.js';
 
@@ -40,6 +41,8 @@ export function ActivityRoute() {
       <SportChips />
       {isSport(sport) && id ? (
         <SessionPage sport={sport} id={Number(id)} />
+      ) : sport === 'running' ? (
+        <RunningPage />
       ) : isSport(sport) ? (
         <SportStub slug={sport} />
       ) : (

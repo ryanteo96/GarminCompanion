@@ -91,6 +91,15 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .fit .ln.form { stroke: var(--ink-steps); }
 .run .ln.pace { stroke: var(--primary); }
 .run .ln.hr { stroke: var(--ink-hrv); }
+.running .ln.pace, .running .dot.pace { stroke: var(--primary); }
+.running .ln.hr, .running .dot.hr { stroke: var(--ink-hrv); }
+.running .ln.rpe, .running .dot.rpe { stroke: var(--ink-load); }
+.running .ln.feel, .running .dot.feel { stroke: var(--ink-steps); }
+.running .dot { stroke: none; }
+.running .dot.pace { fill: var(--primary); } .running .dot.hr { fill: var(--ink-hrv); } .running .dot.rpe { fill: var(--ink-load); } .running .dot.feel { fill: var(--ink-steps); }
+.running .ln { fill: none; stroke-width: 1.5; stroke-opacity: 0.5; }
+.bar.km { fill: var(--primary); } .bar.load { fill: var(--ink-load); }
+.bar.partial { fill-opacity: 0.45; }
 .laps { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .laps th, .laps td { text-align: left; padding: var(--sp-1) var(--sp-2); }
 .laps caption { text-align: left; }

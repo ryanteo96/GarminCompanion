@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { cachedKeys, patchData, signIn } from './helpers.js';
+import { cachedKeys, patchData, signIn, watchErrors } from './helpers.js';
 
 test('changing the range asks the server for that many days', async ({ page }) => {
   await signIn(page);
@@ -95,4 +95,17 @@ test('a running Session shows its pace and heart rate charts, laps and ratings',
   await expect(page.locator('table.laps tbody tr')).toHaveCount(5);
   await expect(page.getByText('Decoupling', { exact: true })).toBeVisible();
   await expect(page.getByText('RPE', { exact: true })).toBeVisible();
+});
+
+test('the Running page draws Zone 2, weekly and effort charts', async ({ page }) => {
+  const errors = watchErrors(page);
+  await signIn(page);
+  await page.goto('/#/activity/running');
+  for (const name of [/^Pace in Zone 2/, /^Heart rate in Zone 2/, /^Weekly distance/, /^Weekly load from runs/, /^Heart rate by run/, /^RPE by run/, /^Feel by run/]) {
+    const chart = page.getByRole('img', { name });
+    await expect(chart).toBeVisible();
+    await expect(chart.locator('path.ln, rect.bar').first()).toBeAttached();
+  }
+  await expect(page.getByText("Couldn't draw this view")).toHaveCount(0);
+  expect(errors).toEqual([]);
 });
