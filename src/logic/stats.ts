@@ -7,7 +7,7 @@ export const mean = (a: Num[]): number | null => {
   const v = a.filter((x) => x != null);
   return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
 };
-const sd = (a: Num[]): number | null => {
+export const sd = (a: Num[]): number | null => {
   const m = mean(a);
   const v = a.filter((x) => x != null);
   return v.length > 1 && m != null ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / (v.length - 1)) : null;
@@ -275,4 +275,22 @@ export function weekDeltas(days: DayWithLoad[]): WeekDelta[] {
     const prev = mean(before.map((d) => d[k]));
     return now == null || prev == null || prev === 0 ? [] : [{ k, label, unit, good, now, prev, pct: ((now - prev) / prev) * 100 }];
   });
+}
+
+export interface HeatCell {
+  date: string;
+  col: number; // week, 0 = oldest
+  row: number; // Monday = 0
+  load: number;
+}
+
+// The last `weeks` weeks (Monday-aligned, ending on the newest day) as grid cells of daily training load.
+export function heatmap(days: DayWithLoad[], weeks = 5): HeatCell[] {
+  const end = days.at(-1)?.date;
+  if (!end) return [];
+  const load = new Map(days.map((d) => [d.date, d.load]));
+  const start = weekStart(shift(end, -(weeks - 1) * 7));
+  const cells: HeatCell[] = [];
+  for (let i = 0, d = start; d <= end; d = shift(start, ++i)) cells.push({ date: d, col: Math.floor(i / 7), row: i % 7, load: load.get(d) ?? 0 });
+  return cells;
 }

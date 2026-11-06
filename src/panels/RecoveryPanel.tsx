@@ -10,11 +10,11 @@ import { Scale } from '../components/Scale.js';
 import { useLayout } from '../layout.js';
 import { latest, series14, withAge } from '../logic/days.js';
 import { fmtDate, hm, localToday, num } from '../logic/format.js';
-import { explain, loadSeries, ratioLabel, readiness, verdict, verdictTone, weekly, type Readiness, type ReadinessKey } from '../logic/stats.js';
+import { explain, loadSeries, loadZone, ratioLabel, readiness, verdict, verdictTone, weekly, type LoadZone, type Readiness, type ReadinessKey } from '../logic/stats.js';
 import { useStore } from '../store.js';
 
 // The four signals behind the readiness score, each as a card that says how it compares with your usual.
-const SIGNALS: [ReadinessKey, string, string, string][] = [['hrv', 'hrv', 'HRV, last night', 'ms'], ['restingHr', 'rhr', 'Resting HR', 'bpm'], ['sleepH', 'sleep', 'Sleep', ''], ['bbHigh', 'bb', 'Body Battery peak', '']];
+const SIGNALS: [ReadinessKey, string, string, string, string][] = [['hrv', 'hrv', 'HRV', 'ms', 'Last night'], ['restingHr', 'rhr', 'Resting HR', 'bpm', 'Daily'], ['sleepH', 'sleep', 'Sleep', '', 'Last night'], ['bbHigh', 'bb', 'Body Battery', '', 'Daily peak']];
 
 const HOW = (
   <details className="how">
@@ -23,6 +23,9 @@ const HOW = (
     <p>The load ratio is your last 7 days of training load divided by your usual week (28-day total divided by 4). Under 0.8 is lighter than usual, up to 1.3 in your sweet spot, up to 1.5 ramping up, above 1.5 spiking.</p>
   </details>
 );
+
+// The dot colours the zone key already uses.
+const ZONE_DOT: Record<LoadZone, string> = { light: 'zk-light', sweet: 'zk-sweet', ramping: 'zk-ramp', spiking: 'zk-spike' };
 
 export function Today({ r, days, compact }: { r: Readiness | null; days: DayWithLoad[]; compact?: boolean }) {
   if (!r) return <Hero id="today" headingId="today-h" state="" tone="" verdict="Not enough data yet" detail="Readiness needs about a week of HRV and sleep history to compare against." chip={null} main={compact ? undefined : HOW} compact={compact} />;
@@ -42,6 +45,7 @@ export function Today({ r, days, compact }: { r: Readiness | null; days: DayWith
       main={
         <>
           {!compact && <p id="today-load" className="loadline">{ratio == null ? '' : `Training load ratio ${ratio.toFixed(2)}: ${ratioLabel(ratio).toLowerCase()}.`}</p>}
+          {compact && ratio != null && <p id="today-load" className="load-chip"><i className={ZONE_DOT[loadZone(ratio)!]} aria-hidden="true" />{`Training load ${ratio.toFixed(2)} \u00b7 ${ratioLabel(ratio)}`}</p>}
           <p id="today-date" className="small muted" hidden={stale}>{`Based on ${fmtDate(r.date)}.`}</p>
           {!compact && HOW}
         </>
@@ -70,10 +74,11 @@ export function Today({ r, days, compact }: { r: Readiness | null; days: DayWith
 }
 
 export function SignalCard({ k, days, r, n = 14 }: { k: ReadinessKey; days: DayWithLoad[]; r: Readiness | null; n?: number }) {
-  const [, ink, label, unit] = SIGNALS.find(([key]) => key === k)!;
+  const [, ink, label, unit, when] = SIGNALS.find(([key]) => key === k)!;
   const sleepScore = latest(days, 'sleepScore');
   const value = latest(days, k);
   const f = k === 'sleepH' ? hm : num;
+  const short = k === 'sleepH' ? (h: number): string => hm(h).replace(/^0h /, '').replace(/ 00m$/, '') : num; // "+55m vs usual 7h"
   const p = r?.parts.find((x) => x.k === k && x.value === value); // only compare the reading the score used
   const u = unit && ` ${unit}`;
   let delta = '';
@@ -81,13 +86,14 @@ export function SignalCard({ k, days, r, n = 14 }: { k: ReadinessKey; days: DayW
   if (p) {
     const diff = p.value - p.base;
     const shown = k === 'sleepH' ? Math.round(Math.abs(diff) * 60) : Math.round(Math.abs(diff));
-    delta = shown === 0 ? `At your usual ${f(p.base)}${u}` : `${diff > 0 ? '+' : '−'}${f(Math.abs(diff))}${u} vs usual ${f(p.base)}${u}`;
+    delta = shown === 0 ? `Usual ${short(p.base)}${u}` : `${diff > 0 ? '+' : '−'}${short(Math.abs(diff))}${u} vs usual ${short(p.base)}${u}`;
     pill = p.z >= 0.5 ? ['good', 'Better'] : p.z <= -0.5 ? ['bad', 'Worse'] : ['', 'About usual'];
   }
   return (
     <MetricCard
       ink={ink}
       label={label}
+      when={when}
       pill={pill}
       value={f(value)}
       unit={k === 'sleepH' || k === 'bbHigh' ? '' : unit}
@@ -162,7 +168,6 @@ export function RecoveryPanel() {
     <>
       <Today r={r} days={days} />
       <Cards days={days} r={r} />
-      <p className="scope">Charts follow the chart range. The Today summary and the cards use the last 7 and 28 days.</p>
       <div className="grid">
         <ChartCard caption="Heart rate variability (ms)" canvasId="c-hrv" {...spec.hrv} />
         <ChartCard caption="Resting heart rate (bpm)" canvasId="c-rhr" {...spec.rhr} />

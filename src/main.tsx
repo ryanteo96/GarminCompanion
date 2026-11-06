@@ -7,6 +7,8 @@ import { App } from './App.js';
 import { LayoutProvider } from './layout.js';
 import { useStore } from './store.js';
 import { TABS } from './tabs.js';
+import '@fontsource-variable/nunito/wght.css';
+import '@fontsource-variable/nunito-sans/wght.css';
 import './style.css';
 
 Chart.register(...registerables);

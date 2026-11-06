@@ -5,7 +5,7 @@ import { scaleLinear } from '@visx/scale';
 import { LinePath } from '@visx/shape';
 import { Hover } from './Hover.js';
 
-const M = { top: 8, right: 12, bottom: 24, left: 40 };
+const M = { top: 8, right: 12, bottom: 24, left: 84 }; // wide enough for the Feel labels, "Very strong"
 
 export interface PlotProps {
   x: number[];
@@ -16,9 +16,10 @@ export interface PlotProps {
   flip?: boolean; // larger values lower, for pace
   dots?: boolean; // runs are discrete, so a lone point still shows
   domain?: [number, number]; // shared x range, so stacked plots line up
+  yTicks?: number[]; // fixed y ticks, for a scale of named steps
 }
 
-function Svg({ width, x: xs, y: ys, cls, flip, fmt, xFmt, dots, domain }: PlotProps & { width: number }) {
+function Svg({ width, x: xs, y: ys, cls, flip, fmt, xFmt, dots, domain, yTicks }: PlotProps & { width: number }) {
   const height = 140;
   const w = Math.max(width - M.left - M.right, 0);
   const h = height - M.top - M.bottom;
@@ -26,11 +27,11 @@ function Svg({ width, x: xs, y: ys, cls, flip, fmt, xFmt, dots, domain }: PlotPr
   const vs = pts.map((p) => p.v);
   const [lo, hi] = domain ?? [0, Math.max(1, ...xs)];
   const x = scaleLinear<number>({ domain: [lo, Math.max(hi, lo + 1)], range: [0, w] });
-  const y = scaleLinear<number>({ domain: [Math.min(...vs), Math.max(...vs)], range: flip ? [0, h] : [h, 0], nice: true });
+  const y = scaleLinear<number>({ domain: [Math.min(...vs, ...(yTicks ?? [])), Math.max(...vs, ...(yTicks ?? []))], range: flip ? [0, h] : [h, 0], nice: true });
   return (
     <svg width={width} height={height} aria-hidden="true">
       <Group left={M.left} top={M.top}>
-        <AxisLeft scale={y} numTicks={4} tickFormat={(v) => fmt(Number(v))} axisClassName="ax" tickClassName="ax" hideAxisLine />
+        <AxisLeft scale={y} tickValues={yTicks ?? [...new Map(y.ticks(4).map((v) => [fmt(v), v])).values()]} tickFormat={(v) => fmt(Number(v))} axisClassName="ax" tickClassName="ax" hideAxisLine />
         <AxisBottom scale={x} top={h} numTicks={5} tickFormat={(v) => xFmt(Number(v))} axisClassName="ax" tickClassName="ax" />
         <LinePath className={`ln ${cls}`} data={pts} x={(p) => x(p.x)} y={(p) => y(p.v)} />
         {dots && pts.map((p, i) => <circle key={i} className={`dot ${cls}`} cx={x(p.x)} cy={y(p.v)} r={3} />)}

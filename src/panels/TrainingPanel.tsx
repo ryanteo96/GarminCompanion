@@ -15,11 +15,14 @@ const newestFirst = (a: Activity, b: Activity): number => b.date.localeCompare(a
 const ZONE_NAMES = ['Z1 Warm-up', 'Z2 Easy', 'Z3 Aerobic', 'Z4 Threshold', 'Z5 Maximum'];
 const ZONE_TOKENS = ['--z1', '--z2', '--z3', '--z4', '--z5'];
 
-export function Sessions({ activities, since }: { activities: Activity[]; since: (n: number) => string }) {
+// `brief` is the Home card: more rows and a plain title, since the heatmap card beside it already totals the week.
+export function Sessions({ activities, since, brief }: { activities: Activity[]; since: (n: number) => string; brief?: boolean }) {
   const week = activities.filter((a) => a.date >= since(7));
   const hours = week.reduce((t, a) => t + (a.minutes ?? 0), 0) / 60;
-  const three = [...activities].sort(newestFirst).slice(0, 3);
-  const heading = three.length
+  const three = [...activities].sort(newestFirst).slice(0, brief ? 4 : 3);
+  const heading = brief && three.length
+    ? 'Recent sessions'
+    : three.length
     ? `Your last ${three.length} session${three.length === 1 ? '' : 's'}: ${week.length ? `${week.length} in the last 7 days, ${num(hours, 1)} h` : 'none in the last 7 days'}`
     : 'No sessions recorded in this range';
   return (
@@ -125,7 +128,6 @@ export function TrainingPanel() {
       <LoadHero last={last}>
         <Sessions activities={activities} since={since} />
       </LoadHero>
-      <p className="scope">Charts follow the chart range. The load summary above uses the last 7 and 28 days.</p>
       <div className="grid">
         <ChartCard caption={spec.wloadCaption} captionId="cap-wload" canvasId="c-wload" type="bar" {...spec.wload} />
         <ChartCard caption="Acute (7-day) vs chronic (28-day weekly average) load" canvasId="c-ac" type="line" {...spec.ac} />
@@ -143,7 +145,7 @@ export function TrainingPanel() {
                 {recent.map((a) => (
                   <tr key={a.id}>
                     {[fmtDate(a.date), a.name, a.type.replaceAll('_', ' '), num(a.minutes), num(a.km, 1), num(a.avgHr), num(a.load)].map((v, i) => (
-                      <td key={i} className={i > 2 ? 'num' : undefined}>{v}</td>
+                      <td key={i} className={i > 2 ? 'num' : i === 2 ? 'a-type' : undefined}>{v}</td>
                     ))}
                   </tr>
                 ))}

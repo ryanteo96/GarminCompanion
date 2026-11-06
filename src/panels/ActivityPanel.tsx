@@ -4,7 +4,7 @@ import { alpha, bar, describe, line, trend, weekBars } from '../chart.js';
 import { ChartCard } from '../components/ChartCard.js';
 import { MetricCard } from '../components/MetricCard.js';
 import { useLayout } from '../layout.js';
-import { avg7, dayLabel, latest, series14 } from '../logic/days.js';
+import { avg7, dayWhen, latest, series14 } from '../logic/days.js';
 import { fmtDate, num } from '../logic/format.js';
 import { mean, weekly } from '../logic/stats.js';
 import { useStore } from '../store.js';
@@ -14,7 +14,7 @@ const GOAL = 150; // Garmin's weekly intensity-minutes goal
 const avg28 = (days: DayWithLoad[], k: DayKey): number | null => mean(days.slice(-28).map((d) => d[k]));
 
 export function StepsCard({ days, n = 14 }: { days: DayWithLoad[]; n?: number }) {
-  return <MetricCard ink="steps" label={dayLabel(days, 'steps', 'Steps')} value={num(latest(days, 'steps'))} subs={[`7-day avg ${num(avg7(days, 'steps'))}`]} series={series14(days, 'steps', 'Steps', avg28(days, 'steps'), num, n)} />;
+  return <MetricCard ink="steps" label="Steps" when={dayWhen(days, 'steps')} value={num(latest(days, 'steps'))} subs={[`7-day avg ${num(avg7(days, 'steps'))}`]} series={series14(days, 'steps', 'Steps', avg28(days, 'steps'), num, n)} />;
 }
 
 export function IntensityCard({ days }: { days: DayWithLoad[] }) {
@@ -24,10 +24,11 @@ export function IntensityCard({ days }: { days: DayWithLoad[] }) {
   return (
     <MetricCard
       ink="int"
-      label="Intensity minutes"
+      label="Intensity"
+      when={partial ? 'This week so far' : 'This week'}
       value={num(thisWeek)}
       unit="min"
-      subs={[`This week${partial ? ' so far' : ''}, goal ${GOAL}`, thisWeek != null && thisWeek < GOAL ? `${num(GOAL - thisWeek)} min to go` : '']}
+      subs={[`Goal ${GOAL} min`, thisWeek != null && thisWeek < GOAL ? `${num(GOAL - thisWeek)} min to go` : '']}
       pill={(thisWeek ?? 0) >= GOAL ? ['good', 'Goal reached'] : undefined}
       progress={thisWeek == null ? null : thisWeek / GOAL}
     />
@@ -35,7 +36,7 @@ export function IntensityCard({ days }: { days: DayWithLoad[] }) {
 }
 
 export function StressCard({ days, n = 14 }: { days: DayWithLoad[]; n?: number }) {
-  return <MetricCard ink="stress" label={dayLabel(days, 'stress', 'Average stress')} value={num(latest(days, 'stress'))} subs={[`7-day avg ${num(avg7(days, 'stress'))}`]} series={series14(days, 'stress', 'Average stress', avg28(days, 'stress'), num, n)} />;
+  return <MetricCard ink="stress" label="Stress" when={dayWhen(days, 'stress')} value={num(latest(days, 'stress'))} subs={[`Daily average · 7-day avg ${num(avg7(days, 'stress'))}`]} series={series14(days, 'stress', 'Average stress', avg28(days, 'stress'), num, n)} />;
 }
 
 export function ActivityPanel() {
@@ -75,10 +76,9 @@ export function ActivityPanel() {
       <div className="metrics" id="k-activity">
         <StepsCard days={days} />
         <IntensityCard days={days} />
-        <MetricCard ink="cal" label={dayLabel(days, 'calories', 'Calories burned')} value={num(latest(days, 'calories'))} subs={[`7-day avg ${num(avg7(days, 'calories'))}`]} series={series14(days, 'calories', 'Calories', avg28(days, 'calories'))} />
+        <MetricCard ink="cal" label="Calories" when={dayWhen(days, 'calories')} value={num(latest(days, 'calories'))} subs={[`7-day avg ${num(avg7(days, 'calories'))}`]} series={series14(days, 'calories', 'Calories', avg28(days, 'calories'))} />
         <StressCard days={days} />
       </div>
-      <p className="scope">Charts follow the chart range. The cards use the latest day and the current week.</p>
       <div className="grid">
         <ChartCard caption="Daily steps" canvasId="c-steps" type="bar" {...spec.steps} />
         <ChartCard caption={`Weekly intensity minutes${imBars.any ? ' (lighter = partial week)' : ''}`} captionId="cap-im" canvasId="c-im" type="bar" {...spec.im} />

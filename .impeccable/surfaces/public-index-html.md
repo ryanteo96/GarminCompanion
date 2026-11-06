@@ -5,30 +5,30 @@ primary_target: "public/index.html"
 related_targets: []
 ---
 
-# Surface brief: the Garmin Companion dashboard (all four areas, login and states)
+# Surface brief: the Garmin Companion dashboard (all areas, login and states)
 
 ## Scope and mode
-Operate. The whole app: Recovery, Training, Activity, Insights, plus login, loading, error and empty states. A complete visual replacement of the earlier look; every function, string and behaviour is kept.
+Operate. The whole app: Home, Activity (Running, Strength), Recovery, plus login, loading, error and empty states. A visual replacement of the navy "Night Instrument Panel"; every function, string and behaviour is kept.
 
 ## Audience, task, constraints
-One owner. Phone at 6:40am in a dim room (decide hard or easy), laptop at a desk (review trends). Dense enough to trust. Standard controls only: sidebar and bottom tab bar, select, buttons, tables. Keep verdict logic, load-ratio hero, privacy behaviour.
+One owner. Phone at 6:40am in a dim room (decide hard or easy), laptop at a desk (review trends). Dense enough to trust. Standard controls only.
 
 ## Chosen direction
-The category standard, played straight, with two user-pinned borrowings: the Survey Sheet's readiness panel and the Midnight Transit Diagram's colour contrast. Craft bar: Garmin Connect and Apple Health. Memorable moment: the poster-size readiness numeral on a tone-washed panel, with the four signals under it in their own inks.
+Pinned by the user (round 2, Nov 2026): Bevel + Apple Health. Round 3: keep their philosophy, not a direct copy; add our own spin. Numerals bundled so every device matches; card names shortened; Sign out moved out of the header; Home sections. Theme follows the system, both first-class. Kept by the user: the poster readiness numeral with its zoned scale, one colour per signal, the laptop sidebar with a phone tab bar, and the density. Craft bar: Bevel, Apple Health, Strava, Hevy.
 
 ## Unresolved
-None blocking. Light theme is composed separately from dark.
+None blocking.
 
 ## Direction contract
 
-THESIS: A calm, dense, standard recovery dashboard where the morning answer leads and every signal keeps one colour everywhere. It refuses the gauge-ring-plus-equal-cards template and any decorative glow or gradient.
+THESIS: A health app's calm, with its own voice. Taken from Bevel and Apple Health as philosophy, not copied: monochrome chrome, colour only for data, borderless rounded cards, big numbers. Our own spin is that every trend is drawn over the owner's own normal range. It refuses the outlined-card-on-navy dashboard, coloured dot captions, tinted panels, and a pixel copy of iOS.
 
-OWN-WORLD: Midnight-navy enamel ground, deeper panels, porcelain text, hairline rules. Stable inks: HRV scarlet, resting HR azure, sleep amber, Body Battery green, load orange, steps teal, intensity violet. System UI type with tabular numerals; the readiness numeral at poster size against 12 to 14px readouts. Left sidebar on laptop, bottom tab bar on phone. Recognisable with content removed by the navy ground and the four vivid inks.
+OWN-WORLD: Graphite ground (#0b0c0f, cards #17191d) in dark, cool grouped grey (#eef0f3, white cards) in light; theme follows the system. Cards borderless at 18px. Bundled Nunito Sans for text and Nunito (rounded, tabular) for numbers, so every OS and browser renders identically. Each card: drawn icon plus signal name in its ink, the time context on the right, the value, then the verdict word leading the comparison line. Signature: every sparkline that has a usual sits on a band of the owner's normal range (usual +/- 1 SD over 28 days) with the usual dashed inside and a ringed dot on the latest reading. Home is grouped under Recovery, Training and Today. Pill buttons, segmented control, green switches.
 
-STORY: The owner reads the verdict and readiness first, sees each signal against their own usual in its own colour, trusts the freshness line, and acts. Nothing asks them to decode a gauge.
+STORY: The owner opens it, reads the readiness number in its state colour and the verdict beside it, scans the signal cards by their coloured headers, and acts.
 
-FIRST VIEWPORT: 1440x900: sidebar 232px (name, four areas, Sign out), top bar (area title, date, freshness, Chart range, Refresh). Hero panel spanning the content: poster numeral and zoned scale left, headline, detail and load line right, tone-washed. Under it four metric cards in their inks (value, usual, delta, 14-day line). Then a wide 90-day chart. Phone: headline first, then numeral and scale, cards 2x2, bottom tabs.
+FIRST VIEWPORT: 1440x900: borderless sidebar (name, three areas, sub-pages), large title with freshness and actions, the readiness card with the poster numeral tinted by state and a capsule zone scale, then four signal cards, each with an ink header, a rounded value, its usual and a trend line (7 days on Home, 14 on the area pages). Phone: large title, readiness card, 2x2 cards, tab bar.
 
-FORM: The category standard (the standing exit), pinned by the user with two borrowings; not on my ranked list. seed: a62ca5fe99819da6
+FORM: User-pinned direction, not rolled: the user chose "Bevel + Apple Health" in the structured question (round 2, Nov 2026), so no concept-seed ran and there is no seed reference. seed: none (user-pinned)
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

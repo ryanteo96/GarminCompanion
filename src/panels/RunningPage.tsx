@@ -44,13 +44,13 @@ export function RunningPage() {
   const domain: [number, number] = days.length ? [epochDay(days[0].date), epochDay(days[days.length - 1].date)] : [0, 1];
   const wk = weeks.some((w) => w.partial) ? ' Lighter bars are partial weeks.' : '';
   const date = (p: { date: string }): number => epochDay(p.date);
-  const effort = (title: string, cls: string, y: (p: (typeof ep)[number]) => number | null, fmt: (v: number) => string, unit: string) => {
+  const effort = (title: string, cls: string, y: (p: (typeof ep)[number]) => number | null, fmt: (v: number) => string, unit: string, yTicks?: number[]) => {
     const vs = ep.map(y).filter((v): v is number => v != null);
     return (
       <div>
         <h3 className="cap">{title}</h3>
         {vs.length ? (
-          <Plot label={`${title}. ${vs.length} runs${unit ? `, average ${fmt(mean(vs))}${unit}` : ''}.`} x={ep.map(date)} y={ep.map(y)} cls={cls} fmt={fmt} xFmt={dayLabel} domain={domain} dots />
+          <Plot label={`${title}. ${vs.length} runs${unit ? `, average ${fmt(mean(vs))}${unit}` : ''}.`} x={ep.map(date)} y={ep.map(y)} cls={cls} fmt={fmt} xFmt={dayLabel} domain={domain} yTicks={yTicks} dots />
         ) : (
           <p className="small muted">No rated runs in this range.</p>
         )}
@@ -60,7 +60,7 @@ export function RunningPage() {
 
   return (
     <div className="running">
-      <h2 className="cap">Running</h2>
+      <h2 className="sr-only">Running</h2>
       <div className="card">
         <h3 className="cap">Pace in Zone 2</h3>
         {zp.length ? (
@@ -82,7 +82,7 @@ export function RunningPage() {
       <div className="card">
         {effort('Heart rate by run', 'hr', (p) => p.hr, (v) => String(Math.round(v)), ' bpm')}
         {effort('RPE by run', 'rpe', (p) => p.rpe, (v) => num(v, 1), ' of 10')}
-        {effort('Feel by run', 'feel', (p) => p.feel, feelLabel, '')}
+        {effort('Feel by run', 'feel', (p) => p.feel, feelLabel, '', [0, 25, 50, 75, 100])}
       </div>
       <Sessions activities={runs} since={since} />
       <p className="small muted">

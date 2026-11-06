@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 import type { DayWithLoad } from '../lib/types.js';
-import { avg7, dayLabel, latest, newest, series14, withAge } from '../src/logic/days.js';
+import { avg7, dayWhen, latest, newest, series14, withAge } from '../src/logic/days.js';
 import { fmtDate, hm, localToday, num, ymd } from '../src/logic/format.js';
 
 const day = (date: string, extra: Partial<DayWithLoad> = {}): DayWithLoad => ({ date, load: 0, ...extra });
@@ -48,15 +48,18 @@ test('withAge labels a reading older than the newest day with its own date', () 
   assert.equal(withAge(days, 'calories', ''), '', 'no reading, nothing to say');
 });
 
-test('dayLabel says "today so far" for a reading from today and the date otherwise', () => {
-  assert.equal(dayLabel([day(localToday(), { steps: 1 })], 'steps', 'Steps'), 'Steps, today so far');
-  assert.match(dayLabel([day('2026-11-03', { steps: 1 })], 'steps', 'Steps'), /^Steps, (Nov 3|3 Nov)$/);
-  assert.equal(dayLabel([day('2026-11-03')], 'steps', 'Steps'), 'Steps', 'no reading keeps the bare label');
+test('dayWhen says "Today so far" for a reading from today and the date otherwise', () => {
+  assert.equal(dayWhen([day(localToday(), { steps: 1 })], 'steps'), 'Today so far');
+  assert.match(dayWhen([day('2026-11-03', { steps: 1 })], 'steps'), /^(Nov 3|3 Nov)$/);
+  assert.equal(dayWhen([day('2026-11-03')], 'steps'), '', 'no reading, no date');
 });
 
 test('series14 returns the last 14 values, the usual line and a text summary', () => {
   const days = [day('2026-11-01', { hrv: 50 }), day('2026-11-02', { hrv: null }), day('2026-11-03', { hrv: 60 })];
-  assert.deepEqual(series14(days, 'hrv', 'HRV', 55), [[50, null, 60], 55, 'HRV, last 14 days: 50 to 60']);
+  const [v, usual, label, band] = series14(days, 'hrv', 'HRV', 55);
+  assert.deepEqual([v, usual, label], [[50, null, 60], 55, 'HRV, last 14 days: 50 to 60']);
+  assert.deepEqual(band?.map((x) => x.toFixed(2)), ['47.93', '62.07'], 'the band is the usual +/- 1 SD');
+  assert.equal(series14(days, 'hrv', 'HRV', null)[3], null, 'no usual, no band');
   assert.deepEqual(series14(days, 'hrv', 'HRV', null, hm)[2], 'HRV, last 14 days: 50h 00m to 60h 00m', 'the formatter is applied to both ends');
   assert.equal(series14([day('2026-11-01')], 'hrv', 'HRV', null)[2], 'HRV', 'no readings: just the name');
   const long = Array.from({ length: 20 }, (_, i) => day(`2026-10-${String(i + 1).padStart(2, '0')}`, { hrv: i }));
