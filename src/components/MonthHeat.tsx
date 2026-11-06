@@ -10,64 +10,151 @@ const DOW = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const TOP = 16;
 const STEP = 24; // cell plus gap
 const CELL = 20;
-const GLOW = 3; // how many cells away the glow still reaches
+const MAGNIFY = 0.3; // extra scale of the cell under the pointer
+const REACH = 1.1; // how far, in cells, the magnification spreads
+const RING = CELL * (1 + MAGNIFY) + 4;
 
-// Daily training load, one row per week (oldest first) and one column per weekday; darker means more load, grey means none. Hover or tap a cell for that day's activities.
+type Quick = { s: ReturnType<typeof gsap.quickTo>; y: ReturnType<typeof gsap.quickTo> };
+
+// Daily training load, one row per week (oldest first) and one column per weekday; darker means more load, grey means none.
+// Under a pointer the grid swells like the Dock around it, a ring glides to the nearest day and a frosted card lists that day's activities.
 export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities: Activity[] }) {
   const [sel, setSel] = useState<HeatCell | null>(null);
-  const [last, setLast] = useState<HeatCell | null>(null); // keeps the lifted cell mounted while it settles back
-  const pick = (c: HeatCell | null) => { setSel(c); if (c) setLast(c); };
+  const [last, setLast] = useState<HeatCell | null>(null); // keeps the card's content while it fades out
+  const root = useRef<HTMLDivElement>(null);
   const els = useRef(new Map<string, SVGRectElement>());
-  const lift = useRef<SVGRectElement>(null);
+  const quick = useRef(new Map<string, Quick>());
+  const ring = useRef<SVGRectElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
+  const ringOn = useRef(false);
   const byDate = useMemo(() => {
     const m = new Map<string, Activity[]>();
     for (const a of activities) m.set(a.date, [...(m.get(a.date) ?? []), a]);
     return m;
   }, [activities]);
 
-  // The hovered cell is picked up and keeps bobbing while the pointer stays; the cells around it glow, rippling out from it.
-  useEffect(() => {
-    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const k = calm ? 0 : 1;
-    for (const c of cells) {
-      const el = els.current.get(c.date);
-      if (!el) continue;
-      const d = sel ? Math.hypot(c.row - sel.row, c.col - sel.col) : 0;
-      const g = sel && c.date !== sel.date ? Math.max(0, 1 - d / (GLOW + 1)) : 0;
-      gsap.to(el, { '--g': g, scale: 1 + 0.12 * g, transformOrigin: '50% 50%', duration: 0.5 * k, delay: sel ? d * 0.05 * k : 0, ease: 'power2.out', overwrite: 'auto' });
-    }
-    const el = lift.current;
-    if (!el) return;
-    gsap.killTweensOf(el);
-    if (!sel) {
-      gsap.to(el, { scale: 1, y: 0, '--b': 0, opacity: 0, duration: 0.25 * k, ease: 'power2.in' });
-      return;
-    }
-    gsap.set(el, { transformOrigin: '50% 50%', opacity: 1, scale: 1, y: 0, '--b': 0 });
-    gsap.to(el, { scale: 1.3, y: -4, '--b': 0.5, duration: 0.45 * k, ease: 'back.out(3)' });
-    if (!calm) gsap.to(el, { scale: 1.38, y: -7, '--b': 1, duration: 0.9, delay: 0.45, ease: 'sine.inOut', yoyo: true, repeat: -1 });
-    return () => { gsap.killTweensOf(el); };
-  }, [sel, cells]);
-
-  if (!cells.length) return <p className="muted">No days to show yet.</p>;
-
-  const weeks = Math.max(...cells.map((c) => c.col)) + 1;
+  const weeks = cells.length ? Math.max(...cells.map((c) => c.col)) + 1 : 0;
   const width = 7 * STEP;
   const height = TOP + weeks * STEP;
   const pad = (STEP - CELL) / STEP;
   const x = scaleBand<number>({ domain: [0, 1, 2, 3, 4, 5, 6], range: [0, width], padding: pad });
   const y = scaleBand<number>({ domain: Array.from({ length: weeks }, (_, i) => i), range: [0, weeks * STEP], padding: pad });
+  const centre = (c: HeatCell): [number, number] => [(x(c.row) ?? 0) + x.bandwidth() / 2, (y(c.col) ?? 0) + y.bandwidth() / 2];
+  const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const k = calm ? 0 : 1;
+
+  // One smoothed setter per cell, so following the pointer is fluid instead of stepping.
+  useEffect(() => {
+    quick.current.clear();
+    for (const c of cells) {
+      const el = els.current.get(c.date);
+      if (!el) continue;
+      gsap.set(el, { transformOrigin: '50% 50%' });
+      const o = { duration: 0.5 * k, ease: 'power3.out' };
+      quick.current.set(c.date, { s: gsap.quickTo(el, 'scale', o), y: gsap.quickTo(el, 'y', o) });
+    }
+  }, [cells, k]);
+
+  const swell = (p: [number, number] | null) => {
+    for (const c of cells) {
+      const q = quick.current.get(c.date);
+      if (!q) continue;
+      const [cx, cy] = centre(c);
+      const w = p && !calm ? Math.exp(-((p[0] - cx) ** 2 + (p[1] - cy) ** 2) / STEP ** 2 / (2 * REACH ** 2)) : 0;
+      void q.s(1 + MAGNIFY * w);
+      void q.y(-3 * w);
+    }
+  };
+
+  const clear = () => {
+    swell(null);
+    setSel(null);
+  };
+
+  const aim = (e: React.PointerEvent<SVGSVGElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const p: [number, number] = [e.clientX - r.left, e.clientY - r.top - TOP];
+    if (p[1] < 0) return clear(); // over the weekday letters
+    swell(p);
+    let best = cells[0];
+    let bd = Infinity;
+    for (const c of cells) {
+      const [cx, cy] = centre(c);
+      const d = (p[0] - cx) ** 2 + (p[1] - cy) ** 2;
+      if (d < bd) { bd = d; best = c; }
+    }
+    if (best.date !== sel?.date) {
+      setSel(best);
+      setLast(best);
+    }
+  };
+
+  // A finger lifts off without a pointerleave worth honouring, so touch dismisses by tapping elsewhere.
+  useEffect(() => {
+    if (!sel) return;
+    const away = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) clear(); };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  });
+
+  // The ring glides between days and breathes slowly while the pointer stays; the card follows it.
+  useEffect(() => {
+    const r = ring.current;
+    const p = pop.current;
+    if (!r || !p) return;
+    gsap.killTweensOf(p); // a slower move to the previous day must not outlive this one
+    if (!sel) {
+      ringOn.current = false;
+      gsap.killTweensOf(r);
+      gsap.to(r, { opacity: 0, scale: 0.9, duration: 0.25 * k, ease: 'power2.in' });
+      gsap.to(p, { opacity: 0, scale: 0.96, duration: 0.2 * k, ease: 'power2.in' });
+      return;
+    }
+    const first = !ringOn.current;
+    ringOn.current = true;
+    const [cx, cy] = centre(sel);
+    const to = { x: cx - RING / 2, y: cy - RING / 2 };
+    if (first) {
+      gsap.set(r, { ...to, transformOrigin: '50% 50%', scale: 0.8, opacity: 0 });
+      gsap.to(r, { opacity: 1, scale: 1, duration: 0.5 * k, ease: 'back.out(2.2)' });
+      if (!calm) gsap.to(r, { scale: 1.05, duration: 1.6, delay: 0.5, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+    } else {
+      gsap.to(r, { ...to, duration: 0.45 * k, ease: 'power3.out', overwrite: 'auto' });
+    }
+    const w = p.offsetWidth;
+    const h = p.offsetHeight;
+    const above = sel.col >= weeks - 2;
+    const px = Math.max(0, cx - w / 2);
+    const py = above ? TOP + cy - CELL * 0.65 - h - 10 : TOP + cy + CELL * 0.65 + 10;
+    const origin = above ? '50% 100%' : '50% 0%';
+    if (first) {
+      gsap.set(p, { x: px, y: py + (above ? -8 : 8), scale: 0.94, opacity: 0, transformOrigin: origin });
+      gsap.to(p, { y: py, scale: 1, opacity: 1, duration: 0.55 * k, ease: 'expo.out' });
+    } else {
+      gsap.to(p, { x: px, y: py, opacity: 1, scale: 1, transformOrigin: origin, duration: 0.45 * k, ease: 'power3.out', overwrite: 'auto' });
+    }
+  }, [sel]); // eslint-disable-line react-hooks/exhaustive-deps -- centre and weeks derive from cells, which only change with the data
+
+  if (!cells.length) return <p className="muted">No days to show yet.</p>;
+
   const max = Math.max(1, ...cells.map((c) => c.load));
   const total = cells.reduce((t, c) => t + c.load, 0);
   const active = cells.filter((c) => c.load > 0).length;
-  const acts = sel ? (byDate.get(sel.date) ?? []) : [];
-  const right = sel != null && sel.row >= 4;
-  const above = sel != null && sel.col >= weeks - 2;
+  const acts = last ? (byDate.get(last.date) ?? []) : [];
   const fill = (c: HeatCell) => (c.load ? { fillOpacity: 0.25 + 0.75 * (c.load / max) } : undefined);
 
   return (
-    <div className="heat" style={{ width, height }} onPointerLeave={() => pick(null)}>
-      <svg width={width} height={height} role="img" aria-label={`Training load by day, ${cells.length} days: ${active} with load, ${num(total)} in total`}>
+    <div ref={root} className="heat" style={{ width, height }}>
+      <svg
+        width={width}
+        height={height}
+        style={{ touchAction: 'pan-y' }}
+        role="img"
+        aria-label={`Training load by day, ${cells.length} days: ${active} with load, ${num(total)} in total`}
+        onPointerMove={aim}
+        onPointerDown={aim}
+        onPointerLeave={(e) => { if (e.pointerType !== 'touch') clear(); }}
+      >
         {DOW.map((d, i) => <text key={i} className="heat-dow" x={(x(i) ?? 0) + x.bandwidth() / 2} y={TOP / 2} textAnchor="middle" dominantBaseline="central" aria-hidden="true">{d}</text>)}
         <Group top={TOP}>
           {cells.map((c) => (
@@ -75,31 +162,30 @@ export function MonthHeat({ cells, activities }: { cells: HeatCell[]; activities
               key={c.date}
               ref={(el) => { if (el) els.current.set(c.date, el); else els.current.delete(c.date); }}
               className={`heat-cell${c.load ? '' : ' none'}`}
-              x={x(c.row)} y={y(c.col)} width={x.bandwidth()} height={y.bandwidth()} rx={3}
+              x={x(c.row)} y={y(c.col)} width={x.bandwidth()} height={y.bandwidth()} rx={6}
               style={fill(c)}
-              onPointerEnter={() => pick(c)}
-              onPointerDown={() => pick(c)}
             />
           ))}
-          {last && (
-            // Drawn last so the lifted cell sits above its neighbours; it takes no pointer events, so the cell underneath keeps the hover.
-            <rect ref={lift} className={`heat-cell heat-lift${last.load ? '' : ' none'}`} x={x(last.row)} y={y(last.col)} width={x.bandwidth()} height={y.bandwidth()} rx={3} style={{ ...fill(last), opacity: 0 }} pointerEvents="none" />
-          )}
+          <rect ref={ring} className="heat-ring" width={RING} height={RING} rx={RING * 0.32} pointerEvents="none" />
         </Group>
       </svg>
-      {sel && (
-        <div
-          className="heat-pop"
-          role="status"
-          style={{ ...(above ? { bottom: height - TOP - (y(sel.col) ?? 0) + 4 } : { top: TOP + (y(sel.col) ?? 0) + STEP }), ...(right ? { right: 0 } : { left: 0 }) }}
-        >
-          <strong>{fmtDate(sel.date)}</strong>
-          <span className="muted">{sel.load ? ` · load ${num(sel.load)}` : ' · no load'}</span>
-          {acts.map((a) => (
-            <div key={a.id}>{a.name} <span className="muted">{[a.minutes != null && `${num(a.minutes)} min`, a.te != null && `TE ${num(a.te, 1)}`].filter(Boolean).join(' · ')}</span></div>
-          ))}
-        </div>
-      )}
+      <div ref={pop} className="heat-pop" role="status" aria-live="polite">
+        {last && (
+          <>
+            <div className="heat-pop-head">
+              <strong>{fmtDate(last.date)}</strong>
+              <span>{last.load ? `Load ${num(last.load)}` : 'No load'}</span>
+            </div>
+            {acts.length === 0 && <div className="heat-pop-meta">No activity</div>}
+            {acts.map((a) => (
+              <div key={a.id} className="heat-pop-act">
+                <div>{a.name}</div>
+                <div className="heat-pop-meta">{[a.minutes != null && `${num(a.minutes)} min`, a.te != null && `Training effect ${num(a.te, 1)}`].filter(Boolean).join(' · ')}</div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
     </div>
   );
 }
