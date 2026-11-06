@@ -16,7 +16,7 @@ test('show appends a hidden card once, hide removes it', () => {
 });
 
 test('reset returns the default order as a fresh array', () => {
-  assert.deepEqual(reset(), ['readiness', 'hrv', 'resting-hr', 'sleep', 'body-battery', 'load', 'month', 'week', 'sessions', 'steps', 'intensity', 'stress']);
+  assert.deepEqual(reset(), ['readiness', 'hrv', 'resting-hr', 'sleep', 'body-battery', 'month', 'sessions', 'week', 'steps', 'intensity', 'stress']);
   assert.notEqual(reset(), DEFAULT_CARDS);
 });
 
