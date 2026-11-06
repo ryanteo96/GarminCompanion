@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/**"
+        ],
+        "createdAt": "2026-11-04T13:02:49.906Z",
+        "reason": "Agent: throwaway decision sketches for rejected directions; each deliberately uses its own type system, and none ships. DESIGN.md describes the shipped build only."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/**"
+        ],
+        "createdAt": "2026-11-04T13:03:15.745Z",
+        "reason": "Agent: throwaway decision sketches for rejected directions; they use their own palette and scale and none ships. DESIGN.md describes the shipped build only."
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/**"
+        ],
+        "createdAt": "2026-11-04T13:03:15.759Z",
+        "reason": "Agent: throwaway decision sketches for rejected directions; they use their own palette and scale and none ships. DESIGN.md describes the shipped build only."
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/**"
+        ],
+        "createdAt": "2026-11-04T13:03:15.773Z",
+        "reason": "Agent: throwaway decision sketches for rejected directions; they use their own palette and scale and none ships. DESIGN.md describes the shipped build only."
+      }
+    ]
+  }
+}
