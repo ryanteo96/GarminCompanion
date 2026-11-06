@@ -32,7 +32,7 @@ It judges today's recovery against the owner's own previous 28 days (HRV, restin
 
 ## Capabilities and Constraints
 
-- Four areas: Recovery (verdict, readiness score and drivers, HRV, resting heart rate, Body Battery, last-night sleep stages), Training (load ratio hero, last sessions, weekly load, acute versus chronic, heart-rate zones, activity list), Activity (steps, intensity minutes against the 150 goal, stress), Insights (7-day versus prior-21-day changes, ranked correlations, shown only with 14 or more overlapping days).
+- Three destinations: Home (daily values, weekly overview, month heatmap), Activity (Training merged in: Fitness/Fatigue/Form, load, steps, intensity minutes, stress, the Session list; Running and Strength Sport pages beneath it), Recovery (verdict, readiness score and drivers, HRV, resting heart rate, Body Battery, last-night sleep stages). See `docs/stage-1-spec.md`.
 - The Garmin Personal API is read-only. Sleep arrives as stage totals and bed and wake times, not a per-minute timeline, so a true hypnogram is not possible.
 - Readiness uses z-scores against the owner's 28-day baseline (60 is typical for them). The load ratio is the last 7 days of activity load divided by the 28-day total divided by 4. Cut-offs: under 0.8 light, to 1.3 sweet spot, to 1.5 ramping, above that spiking. Both are heuristics and the app states they are not medical advice.
 - Terminology to keep: "readiness", "load ratio", "usual" (the owner's own baseline), "normal range", "Chart range".
@@ -43,7 +43,7 @@ It judges today's recovery against the owner's own previous 28 days (HRV, restin
 
 - The name is "Garmin Companion".
 - No Garmin logos or brand assets are used; it is a personal tool, not an official Garmin product.
-- Voice today: plain, specific, second person, no hype, no gamification. A bad recovery day is information, not a failure.
+- Voice today: plain, specific, second person, no hype, no gamification: consistency is shown as neutral weekly facts, never streaks or badges. A bad recovery day is information, not a failure.
 - Design language (user confirmed in the redesign round): the category standard, played straight: a dark card-and-sidebar dashboard in system type, with no irony or quirk. Two things are borrowed by the user's explicit choice: the readiness presentation from the "Survey Sheet" sketch (a poster-size numeral with "of 100" and the zoned 0 to 100 scale beneath it) and the colour contrast of the "Midnight Transit Diagram" sketch (a deep midnight-navy ground with vivid, saturated per-signal inks).
 - Craft bar (user confirmed): it should sit alongside Garmin Connect and Apple Health.
 
@@ -57,7 +57,7 @@ It judges today's recovery against the owner's own previous 28 days (HRV, restin
 
 1. **The morning answer leads; everything else is its evidence.** The verdict is read first on every screen size and every other element exists to confirm or challenge it.
 2. **Compare to the owner's own baseline, never a generic target.** Every number appears next to what is usual for this person.
-3. **Be honest about provenance and freshness.** Say what is computed here versus reported by Garmin, which day a reading is from, and when something is missing. Never fake precision.
+3. **Be honest about provenance and freshness.** Say which day a reading is from and when something is missing. Computed metrics cite their published method in a quiet note, with one disclaimer that they are estimates, not Garmin's numbers and not medical advice (ADR 0004). Never fake precision.
 4. **Dense enough to act on.** The owner explicitly named "too sparse to trust" as the failure to avoid, so enough real data must stay visible to justify the verdict, especially on the laptop.
 5. **Private by default.** Health data is never cached by the browser and signing out means signed out.
 
