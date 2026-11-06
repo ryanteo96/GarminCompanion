@@ -98,6 +98,11 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .running .dot { stroke: none; }
 .running .dot.pace { fill: var(--primary); } .running .dot.hr { fill: var(--ink-hrv); } .running .dot.rpe { fill: var(--ink-load); } .running .dot.feel { fill: var(--ink-steps); }
 .running .ln { fill: none; stroke-width: 1.5; stroke-opacity: 0.5; }
+.guide { stroke: var(--mfg); stroke-dasharray: 3 3; }
+.hd { stroke: none; } .hd.fitness, .hd.pace, .hd.km { fill: var(--primary); } .hd.fatigue, .hd.rpe, .hd.load { fill: var(--ink-load); } .hd.form, .hd.feel { fill: var(--ink-steps); } .hd.hr { fill: var(--ink-hrv); }
+.tip { fill: var(--text); font: 600 0.75rem var(--sans); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+.running { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+.running .card > * + .cap, .fit-plot + .cap, .run > .cap { margin-top: var(--sp-3); }
 .bar.km { fill: var(--primary); } .bar.load { fill: var(--ink-load); }
 .bar.partial { fill-opacity: 0.45; }
 .laps { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
