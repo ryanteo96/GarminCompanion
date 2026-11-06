@@ -81,3 +81,17 @@ test('storedDetail asks only for detail stored by the current parser', async () 
   const q = fake.calls.find((c) => c.text.includes('detail is not null and parser_version'));
   assert.deepEqual(q?.values, [7, PARSER_VERSION]);
 });
+
+test('pendingCount is what the next sync will download, capped; 0 without a database', async () => {
+  const { pendingCount } = await import('../lib/activities.js');
+  const live = Array.from({ length: 12 }, (_, i) => act(i + 1, '2026-11-05'));
+  assert.equal(await pendingCount(live, TODAY), 10);
+  process.env.DATABASE_URL = '';
+  assert.equal(await pendingCount(live, TODAY), 0);
+});
+
+test('deleteStored wipes the table', async () => {
+  const { deleteStored } = await import('../lib/activities.js');
+  await deleteStored();
+  assert.ok(fake.calls.some((c) => c.text === 'delete from activities'));
+});

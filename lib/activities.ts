@@ -49,6 +49,23 @@ export async function storedDetail(id: number): Promise<Detail | null> {
   return rows[0]?.detail ?? null;
 }
 
+// How many Sessions the next sync will download, for the "syncing N" notice. 0 when storage is off or unreachable.
+export async function pendingCount(live: Activity[], today: string): Promise<number> {
+  if (!process.env.DATABASE_URL) return 0;
+  try {
+    const sql = await open();
+    const rows = (await sql`select id, parser_version, attempts, detail is not null as has_detail from activities where id = any(${live.map((a) => a.id)}::bigint[])`) as StoredRow[];
+    return Math.min(CAP, pending(live, rows, today).length);
+  } catch {
+    return 0;
+  }
+}
+
+// ADR 0005: the manual wipe. The next load re-syncs the last 90 days.
+export async function deleteStored(): Promise<void> {
+  await (await open())`delete from activities`;
+}
+
 const fetchDetail = async (id: number): Promise<Detail> => parseFit(await downloadActivity(id));
 
 // Returns how many Sessions were stored. Never throws: it runs after the response, where nobody can see an error.

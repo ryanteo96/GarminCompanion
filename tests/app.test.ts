@@ -6,6 +6,7 @@ import { addDays, clock, normalize, parseToken, pickToday, ranges, token } from 
 import { sample } from '../lib/sample.js';
 import data from '../api/data.js';
 import sessionApi from '../api/session.js';
+import activitiesApi from '../api/activities.js';
 import logout from '../api/logout.js';
 import { friendly } from '../src/logic/errors.js';
 import { ago } from '../src/logic/time.js';
@@ -295,4 +296,11 @@ test('the session endpoint needs a session and a valid id, and reports not store
     Object.assign(process.env, saved);
     if (saved.GARMIN_API_KEY === undefined) delete process.env.GARMIN_API_KEY;
   }
+});
+
+test('the stored-data wipe needs a session and only accepts DELETE', async () => {
+  const cookie = `gc=${mintCookie()}`;
+  assert.equal((await call(activitiesApi, { method: 'DELETE', headers: {} })).status, 401);
+  assert.equal((await call(activitiesApi, { method: 'GET', headers: { cookie } })).status, 405);
+  assert.equal((await call(activitiesApi, { method: 'DELETE', headers: { cookie } })).status, 200);
 });
